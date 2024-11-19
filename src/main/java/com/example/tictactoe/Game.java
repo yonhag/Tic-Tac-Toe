@@ -3,74 +3,170 @@ package com.example.tictactoe;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
 
 public class Game {
+
+    @FXML private GridPane gameBoard;
     @FXML private Label statusLabel;
-    @FXML private Button button0, button1, button2, button3, button4, button5, button6, button7, button8;
 
-    private String currentPlayer = "X";
-    private Button[] buttons;
+    private int boardSize;
+    private Button[][] buttons;
 
-    @FXML
-    public void initialize() {
-        // Store buttons in an array for easier access
-        buttons = new Button[]{button0, button1, button2, button3, button4, button5, button6, button7, button8};
+    private Player player;
+    private Boolean isMyTurn;
+    private String playerSymbol;
+    private GameListener listener;
 
-        // Add event listeners to each button
-        for (Button button : buttons) {
-            button.setOnAction(event -> handleButtonClick(button));
+    public void setGameListener(GameListener listener) {
+        this.listener = listener;
+    }
+
+    public void startGame(Player player1, String symbol) {
+        player = player1;
+        boardSize = player1.getSize();
+        playerSymbol = symbol;
+        isMyTurn = symbol.equals("X");
+        statusLabel.setText(isMyTurn ? "Your Turn!" : "Opponent's Turn");
+
+        createBoard();
+    }
+
+    private void createBoard() {
+        buttons = new Button[boardSize][boardSize];
+        for (int row = 0; row < boardSize; row++) {
+            for (int col = 0; col < boardSize; col++) {
+                Button button = new Button();
+                button.setPrefSize(100, 100);
+                button.setOnAction(_ -> handleButtonClick(button));
+                button.setUserData(new int[]{row, col});
+                buttons[row][col] = button;
+                gameBoard.add(button, col, row);
+            }
         }
     }
 
     private void handleButtonClick(Button button) {
-        // If the button is already clicked, ignore
+        if (!isMyTurn)
+            return;
+
         if (!button.getText().isEmpty()) return;
 
-        // Set the button's text to the current player's symbol
-        button.setText(currentPlayer);
+        button.setText(playerSymbol);
+        int[] coordinates = (int[]) button.getUserData();
+        int x = coordinates[0];
+        int y = coordinates[1];
 
-        // Check for a win or draw
+        listener.onTurn(player, x, y);
+
         if (checkWin()) {
-            statusLabel.setText("Player " + currentPlayer + " Wins!");
-            disableButtons();
+            statusLabel.setText("You won!");
+            disableBoard();
         } else if (isDraw()) {
             statusLabel.setText("It's a Draw!");
+            disableBoard();
         } else {
-            // Switch player
-            currentPlayer = currentPlayer.equals("X") ? "O" : "X";
-            statusLabel.setText("Player " + currentPlayer + "'s Turn");
+            isMyTurn = false;
+            statusLabel.setText("Opponent's turn");
+        }
+    }
+
+    public void updateBoard(int x, int y) {
+        buttons[x][y].setText(playerSymbol.equals("X") ? "O" : "X");
+
+        if (checkWin()) {
+            statusLabel.setText("Opponent Won!");
+            disableBoard();
+        } else if (isDraw()) {
+            statusLabel.setText("It's a draw!");
+            disableBoard();
+        } else {
+            isMyTurn = true;
+            statusLabel.setText("Your turn!");
         }
     }
 
     private boolean checkWin() {
-        // Winning combinations (3 in a row)
-        int[][] winCombinations = {
-                {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // Rows
-                {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // Columns
-                {0, 4, 8}, {2, 4, 6}             // Diagonals
-        };
+        System.out.println(checkRows());
+        System.out.println(checkColumns());
+        System.out.println(checkDiagonals());
+        return checkRows() || checkColumns() || checkDiagonals();
+    }
 
-        // Checking if player has matching combinations
-        for (int[] combo : winCombinations) {
-            if (buttons[combo[0]].getText().equals(currentPlayer) &&
-                    buttons[combo[1]].getText().equals(currentPlayer) &&
-                    buttons[combo[2]].getText().equals(currentPlayer)) {
-                return true;
+    private boolean checkRows() {
+        for (int row = 0; row < boardSize; row++) {
+            boolean win = true;
+            for (int col = 1; col < boardSize; col++) {
+                if (!buttons[row][col].getText().equals(buttons[row][col - 1].getText()) ||
+                        buttons[row][col].getText().isEmpty()) {
+                    win = false;
+                    break;
+                }
             }
+            if (win) return true;
         }
         return false;
     }
 
+    private boolean checkColumns() {
+        for (int col = 0; col < boardSize; col++) {
+            boolean win = true;
+            for (int row = 1; row < boardSize; row++) {
+                if (!buttons[row][col].getText().equals(buttons[row - 1][col].getText()) ||
+                        buttons[row][col].getText().isEmpty()) {
+                    win = false;
+                    break;
+                }
+            }
+            if (win) return true;
+        }
+        return false;
+    }
+
+    private boolean checkDiagonals() {
+        String mainSymbol = buttons[0][0].getText();
+        boolean winMainDiagonal = !mainSymbol.isEmpty(); // Ensure the first cell is not empty
+
+        for (int i = 1; i < boardSize; i++) {
+            if (!buttons[i][i].getText().equals(mainSymbol)) {
+                winMainDiagonal = false;
+                break;
+            }
+        }
+
+        String antiSymbol = buttons[0][boardSize - 1].getText();
+        boolean winAntiDiagonal = !antiSymbol.isEmpty(); // Ensure the first cell is not empty
+
+        for (int i = 1; i < boardSize; i++) {
+            if (!buttons[i][boardSize - i - 1].getText().equals(antiSymbol)) {
+                winAntiDiagonal = false;
+                break;
+            }
+        }
+
+        return winMainDiagonal || winAntiDiagonal;
+    }
+
     private boolean isDraw() {
-        for (Button button : buttons) {
-            if (button.getText().isEmpty()) return false;
+        for (int row = 0; row < boardSize; row++) {
+            for (int col = 0; col < boardSize; col++) {
+                if (buttons[row][col].getText().isEmpty()) {
+                    return false;
+                }
+            }
         }
         return true;
     }
 
-    private void disableButtons() {
-        for (Button button : buttons) {
-            button.setDisable(true);
+    public Player getPlayer() {
+        return player;
+    }
+
+    private void disableBoard() {
+        for (int row = 0; row < boardSize; row++) {
+            for (int col = 0; col < boardSize; col++) {
+                buttons[row][col].setDisable(true);
+            }
         }
     }
 }

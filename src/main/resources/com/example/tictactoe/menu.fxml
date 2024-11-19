@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.tictactoe.Menu"
+      alignment="CENTER" spacing="15" prefWidth="400" prefHeight="300">
+    <!-- Title -->
+    <Label text="Tic Tac Toe Menu" style="-fx-font-size: 20; -fx-font-weight: bold;" />
+
+    <!-- Player Name Input -->
+    <HBox spacing="10" alignment="CENTER">
+        <Label text="Player Name:" />
+        <TextField fx:id="nameField" promptText="Enter your name" />
+    </HBox>
+
+    <!-- Board Size Selector -->
+    <HBox spacing="10" alignment="CENTER">
+        <Label text="Board Size:" />
+        <Spinner fx:id="boardSizeSpinner" min="3" max="10" initialValue="3" />
+    </HBox>
+
+    <!-- Submit Button -->
+    <Button text="Start Game" onAction="#handleSubmit" />
+</VBox>
