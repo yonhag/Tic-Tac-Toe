@@ -87,9 +87,6 @@ public class Game {
     }
 
     private boolean checkWin() {
-        System.out.println(checkRows());
-        System.out.println(checkColumns());
-        System.out.println(checkDiagonals());
         return checkRows() || checkColumns() || checkDiagonals();
     }
 
