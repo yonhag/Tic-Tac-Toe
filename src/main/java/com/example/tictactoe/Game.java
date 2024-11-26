@@ -1,169 +1,70 @@
 package com.example.tictactoe;
 
-import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
+import java.io.*;
+import java.net.*;
 
-public class Game {
+public class Game implements GameListener {
+    private char[][] board;
+    private int[] lastTurn;
+    private int size;
+    private GameController player1;
+    private GameController player2;
+    private Player lastPlayed;
 
-    @FXML private GridPane gameBoard;
-    @FXML private Label statusLabel;
+    private int port;
 
-    private int boardSize;
-    private Button[][] buttons;
+    private static final char EMPTY = '-';
+    private static final char PLAYER_X = 'X';
+    private static final char PLAYER_O = 'O';
 
-    private Player player;
-    private Boolean isMyTurn;
-    private String playerSymbol;
-    private GameListener listener;
+    public Game(int size, GameController player1, GameController player2) throws IOException {
+        this.player1 = player1;
+        this.player2 = player2;
 
-    public void setGameListener(GameListener listener) {
-        this.listener = listener;
+        this.player1.setGameListener(this);
+        this.player2.setGameListener(this);
+
+        this.lastPlayed = player2.getPlayer();
+        this.size = size;
+        board = new char[size][size];
+        lastTurn = new int[2];
+
+        initializeBoard();
+        initializeServer();
     }
 
-    public void startGame(Player player1, String symbol) {
-        player = player1;
-        boardSize = player1.getSize();
-        playerSymbol = symbol;
-        isMyTurn = symbol.equals("X");
-        statusLabel.setText(isMyTurn ? "Your Turn!" : "Opponent's Turn");
+    private void initializeServer() throws IOException {
 
-        createBoard();
     }
 
-    private void createBoard() {
-        buttons = new Button[boardSize][boardSize];
-        for (int row = 0; row < boardSize; row++) {
-            for (int col = 0; col < boardSize; col++) {
-                Button button = new Button();
-                button.setPrefSize(100, 100);
-                button.setOnAction(_ -> handleButtonClick(button));
-                button.setUserData(new int[]{row, col});
-                buttons[row][col] = button;
-                gameBoard.add(button, col, row);
+    private void initializeBoard() {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                board[i][j] = EMPTY;
             }
         }
+        lastTurn[0] = -999;
+        lastTurn[1] = -999;
     }
 
-    private void handleButtonClick(Button button) {
-        if (!isMyTurn)
-            return;
+    public void onTurn(Player player, int x, int y) {
+        if (player.equals(player1.getPlayer()))
+            board[x][y] = PLAYER_X;
+        else
+            board[x][y] = PLAYER_O;
 
-        if (!button.getText().isEmpty()) return;
-
-        button.setText(playerSymbol);
-        int[] coordinates = (int[]) button.getUserData();
-        int x = coordinates[0];
-        int y = coordinates[1];
-
-        listener.onTurn(player, x, y);
-
-        if (checkWin()) {
-            statusLabel.setText("You won!");
-            disableBoard();
-        } else if (isDraw()) {
-            statusLabel.setText("It's a Draw!");
-            disableBoard();
-        } else {
-            isMyTurn = false;
-            statusLabel.setText("Opponent's turn");
-        }
+        lastPlayed = player;
+        lastTurn[0] = x;
+        lastTurn[1] = y;
     }
 
-    public void updateBoard(int x, int y) {
-        buttons[x][y].setText(playerSymbol.equals("X") ? "O" : "X");
-
-        if (checkWin()) {
-            statusLabel.setText("Opponent Won!");
-            disableBoard();
-        } else if (isDraw()) {
-            statusLabel.setText("It's a draw!");
-            disableBoard();
-        } else {
-            isMyTurn = true;
-            statusLabel.setText("Your turn!");
-        }
+    public int[] getLastTurn() {
+        System.out.println(lastTurn);
+        return lastTurn;
     }
 
-    private boolean checkWin() {
-        return checkRows() || checkColumns() || checkDiagonals();
-    }
-
-    private boolean checkRows() {
-        for (int row = 0; row < boardSize; row++) {
-            boolean win = true;
-            for (int col = 1; col < boardSize; col++) {
-                if (!buttons[row][col].getText().equals(buttons[row][col - 1].getText()) ||
-                        buttons[row][col].getText().isEmpty()) {
-                    win = false;
-                    break;
-                }
-            }
-            if (win) return true;
-        }
-        return false;
-    }
-
-    private boolean checkColumns() {
-        for (int col = 0; col < boardSize; col++) {
-            boolean win = true;
-            for (int row = 1; row < boardSize; row++) {
-                if (!buttons[row][col].getText().equals(buttons[row - 1][col].getText()) ||
-                        buttons[row][col].getText().isEmpty()) {
-                    win = false;
-                    break;
-                }
-            }
-            if (win) return true;
-        }
-        return false;
-    }
-
-    private boolean checkDiagonals() {
-        String mainSymbol = buttons[0][0].getText();
-        boolean winMainDiagonal = !mainSymbol.isEmpty(); // Ensure the first cell is not empty
-
-        for (int i = 1; i < boardSize; i++) {
-            if (!buttons[i][i].getText().equals(mainSymbol)) {
-                winMainDiagonal = false;
-                break;
-            }
-        }
-
-        String antiSymbol = buttons[0][boardSize - 1].getText();
-        boolean winAntiDiagonal = !antiSymbol.isEmpty(); // Ensure the first cell is not empty
-
-        for (int i = 1; i < boardSize; i++) {
-            if (!buttons[i][boardSize - i - 1].getText().equals(antiSymbol)) {
-                winAntiDiagonal = false;
-                break;
-            }
-        }
-
-        return winMainDiagonal || winAntiDiagonal;
-    }
-
-    private boolean isDraw() {
-        for (int row = 0; row < boardSize; row++) {
-            for (int col = 0; col < boardSize; col++) {
-                if (buttons[row][col].getText().isEmpty()) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    public Player getPlayer() {
-        return player;
-    }
-
-    private void disableBoard() {
-        for (int row = 0; row < boardSize; row++) {
-            for (int col = 0; col < boardSize; col++) {
-                buttons[row][col].setDisable(true);
-            }
-        }
+    public boolean isMyTurn(Player player) {
+        System.out.println(player.getName());
+        return !player.equals(lastPlayed);
     }
 }

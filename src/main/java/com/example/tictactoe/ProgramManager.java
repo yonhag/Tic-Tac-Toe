@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.List;
 
-public class ProgramManager extends Application implements MenuListener, GameListener {
+public class ProgramManager extends Application implements MenuListener {
     private Queue<Player> playerQueue;
     private List<GamePair> games;
 
@@ -37,10 +37,10 @@ public class ProgramManager extends Application implements MenuListener, GameLis
         return menuController;
     }
 
-    private Game openGameWindow(Player playerAgainst, String playerSign) throws IOException {
+    private GameController openGameWindow(Player playerAgainst, String playerSign) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("game.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        Game gameController = fxmlLoader.getController();
+        GameController gameController = fxmlLoader.getController();
         gameController.startGame(playerAgainst, playerSign);
 
         Stage stage = new Stage();
@@ -72,12 +72,9 @@ public class ProgramManager extends Application implements MenuListener, GameLis
 
     private void startGame(Player player1, Player player2) {
         try {
-            Game player1Game = openGameWindow(player1, "X");
-            Game player2Game = openGameWindow(player2, "O");
-
-            // Set the same listener for both games
-            player1Game.setGameListener(this);
-            player2Game.setGameListener(this);
+            GameController player1Game = openGameWindow(player1, "X");
+            GameController player2Game = openGameWindow(player2, "O");
+            Game game = new Game(player1.getSize(), player1Game, player2Game);
 
             // Add the paired games to the list
             games.add(new GamePair(player1Game, player2Game));
@@ -89,19 +86,5 @@ public class ProgramManager extends Application implements MenuListener, GameLis
     @Override
     public void onOpponentFound() {
         // This method can be left empty or used for additional logic if needed
-    }
-
-    public void onTurn(Player player, int x, int y) {
-        Game playerGame = findOpponent(player);
-        playerGame.updateBoard(x, y);
-    }
-
-    public Game findOpponent(Player targetPlayer) {
-        for (GamePair pair : games) {
-            Game game = pair.getOpponentGame(targetPlayer);
-            if (game != null)
-                return game;
-        }
-        return null;
     }
 }
