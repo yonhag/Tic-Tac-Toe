@@ -1,13 +1,24 @@
-package com.example.tictactoe;
+package tictactoe;
 
 import javafx.fxml.FXML;
-import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+
+import java.io.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 
 import static java.lang.Thread.sleep;
 
+/*
+    Controls the game window itself.
+*/
 public class GameController {
     @FXML private GridPane gameBoard;
     @FXML private Label statusLabel;
@@ -18,21 +29,27 @@ public class GameController {
     private Player player;
     private Boolean isMyTurn;
     private String playerSymbol;
-    private GameListener listener;
 
-    public void setGameListener(GameListener listener) {
-        this.listener = listener;
-        if (!isMyTurn)
-            startListeningForOpponent();
+    private Socket server;
+        private PrintWriter writer;
+        private BufferedReader reader;
 
-    }
-
-    public void startGame(Player player1, String symbol) {
+    public void startGame(Player player1, String symbol, InetAddress ip, int port) throws IOException {
         player = player1;
         boardSize = player1.getSize();
         playerSymbol = symbol;
         isMyTurn = symbol.equals("X");
         statusLabel.setText(isMyTurn ? "Your Turn!" : "Opponent's Turn");
+
+        // Creating the socket
+        server = new Socket();
+        SocketAddress socketAddress = new InetSocketAddress(ip, port);
+        server.connect(socketAddress);
+
+        // Creating streams for use
+        InputStream inputStream = server.getInputStream();
+        reader = new BufferedReader(new InputStreamReader(inputStream));
+        writer = new PrintWriter(server.getOutputStream(), true);
 
         createBoard();
     }
@@ -43,7 +60,13 @@ public class GameController {
             for (int col = 0; col < boardSize; col++) {
                 Button button = new Button();
                 button.setPrefSize(100, 100);
-                button.setOnAction(_ -> handleButtonClick(button));
+                button.setOnAction(_ -> {
+                    try {
+                        handleButtonClick(button);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
                 button.setUserData(new int[]{row, col});
                 buttons[row][col] = button;
                 gameBoard.add(button, col, row);
@@ -51,7 +74,7 @@ public class GameController {
         }
     }
 
-    private void handleButtonClick(Button button) {
+    private void handleButtonClick(Button button) throws IOException {
         if (!isMyTurn)
             return;
 
@@ -62,20 +85,9 @@ public class GameController {
         int x = coordinates[0];
         int y = coordinates[1];
 
-        listener.onTurn(player, x, y);
+        sendMove(x, y);
 
-        if (checkWin()) {
-            statusLabel.setText("You won!");
-            disableBoard();
-        } else if (isDraw()) {
-            statusLabel.setText("It's a Draw!");
-            disableBoard();
-        } else {
-            listener.onTurn(player, x, y);
-            isMyTurn = false;
-            statusLabel.setText("Opponent's turn");
-            startListeningForOpponent();
-        }
+
     }
 
     public void updateBoard(int x, int y) {
@@ -90,6 +102,20 @@ public class GameController {
         } else {
             isMyTurn = true;
             statusLabel.setText("Your turn!");
+        }
+    }
+
+    private void sendMove(int x, int y) {
+        JSONObject json = new JSONObject();
+        json.put("X", x);
+        json.put("Y", y);
+
+        // Sending the message
+        if (writer != null) {
+            writer.println(json.toString());
+            System.out.println("Message sent: " + json);
+        } else {
+            System.err.println("Writer is not initialized.");
         }
     }
 
@@ -174,27 +200,35 @@ public class GameController {
         }
     }
 
-    private void getOthersTurn() {
-        while(!listener.isMyTurn(player)) {
-            try {
-                sleep(500);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+    public void startListeningForOpponent() throws IOException {
+            String message;
+            while ((message = reader.readLine()) != null) {
+                System.out.println("Received: " + message);
+                handleServerMessage(message);
             }
-        }
-        int[] lastTurn = listener.getLastTurn();
-        int x = lastTurn[0];
-        int y = lastTurn[1];
-
-        Platform.runLater(() -> {
-            updateBoard(x, y);
-            isMyTurn = true;
-        });
     }
 
-    public void startListeningForOpponent() {
-        Thread opponentTurnThread = new Thread(this::getOthersTurn);
-        opponentTurnThread.setDaemon(true); // Ensures the thread stops when the application exits
-        opponentTurnThread.start();
+    public void handleServerMessage(String message) {
+        JSONObject json = (JSONObject)JSONValue.parse(message);
+
+        switch((GameStates)json.get("State"))
+        {
+            case GameStates.GameStillGoing:
+                isMyTurn = true;
+                statusLabel.setText("Your Turn");
+                break;
+            case GameStates.Tie:
+                statusLabel.setText("It's a Draw!");
+                disableBoard();
+                break;
+            case GameStates.EnemyWin:
+                statusLabel.setText("Enemy won!");
+                disableBoard();
+                break;
+            case GameStates.YouWin:
+                statusLabel.setText("You won!");
+                disableBoard();
+                break;
+        }
     }
 }

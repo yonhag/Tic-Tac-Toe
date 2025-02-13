@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.tictactoe.Menu"
+      fx:controller="tictactoe.Menu"
       alignment="CENTER" spacing="15" prefWidth="400" prefHeight="300">
     <!-- Title -->
     <Label text="Tic Tac Toe Menu" style="-fx-font-size: 20; -fx-font-weight: bold;" />

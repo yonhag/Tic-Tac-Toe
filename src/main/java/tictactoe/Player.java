@@ -1,4 +1,4 @@
-package com.example.tictactoe;
+package tictactoe;
 
 import java.util.Objects;
 

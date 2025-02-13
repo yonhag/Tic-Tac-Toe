@@ -1,8 +1,9 @@
-module com.example.tictactoe {
+module tictactoe {
     requires javafx.controls;
     requires javafx.fxml;
+    requires json.simple;
 
 
-    opens com.example.tictactoe to javafx.fxml;
-    exports com.example.tictactoe;
+    opens tictactoe to javafx.fxml;
+    exports tictactoe;
 }
