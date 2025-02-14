@@ -6,13 +6,9 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 
 import static java.lang.Thread.sleep;
 
@@ -28,23 +24,21 @@ public class GameController {
 
     private Player player;
     private Boolean isMyTurn;
-    private String playerSymbol;
+    private char playerSymbol;
 
     private Socket server;
         private PrintWriter writer;
         private BufferedReader reader;
 
-    public void startGame(Player player1, String symbol, InetAddress ip, int port) throws IOException {
-        player = player1;
-        boardSize = player1.getSize();
-        playerSymbol = symbol;
-        isMyTurn = symbol.equals("X");
+    public void startGame(Player player, Socket socket) throws IOException {
+        this.player = player;
+        boardSize = player.getSize();
+        playerSymbol = player.getSymbol();
+        isMyTurn = playerSymbol == 'X';
         statusLabel.setText(isMyTurn ? "Your Turn!" : "Opponent's Turn");
 
         // Creating the socket
-        server = new Socket();
-        SocketAddress socketAddress = new InetSocketAddress(ip, port);
-        server.connect(socketAddress);
+        server = socket;
 
         // Creating streams for use
         InputStream inputStream = server.getInputStream();
@@ -80,7 +74,7 @@ public class GameController {
 
         if (!button.getText().isEmpty()) return;
 
-        button.setText(playerSymbol);
+        button.setText(String.valueOf(playerSymbol));
         int[] coordinates = (int[]) button.getUserData();
         int x = coordinates[0];
         int y = coordinates[1];
@@ -91,7 +85,7 @@ public class GameController {
     }
 
     public void updateBoard(int x, int y) {
-        buttons[x][y].setText(playerSymbol.equals("X") ? "O" : "X");
+        buttons[x][y].setText(playerSymbol == 'X' ? "O" : "X");
 
         if (checkWin()) {
             statusLabel.setText("Opponent Won!");

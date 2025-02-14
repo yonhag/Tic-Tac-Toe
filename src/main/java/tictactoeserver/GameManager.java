@@ -1,8 +1,6 @@
 package tictactoeserver;
 
 import java.io.*;
-import java.net.*;
-import java.util.stream.Collectors;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -12,39 +10,41 @@ public class GameManager {
     private int[] lastTurn;
     private int size;
     private GamePlayer lastPlayed;
+    private boolean isOver;
 
-    private GamePlayer player1;
-    private GamePlayer player2;
+    private GamePlayer playerX;
+    private GamePlayer playerO;
 
     private static final char EMPTY = '-';
     private static final char PLAYER_X = 'X';
     private static final char PLAYER_O = 'O';
 
-    public GameManager(int size, GamePlayer player1, GamePlayer player2) throws IOException {
-        this.player1 = player1;
-        this.player2 = player2;
+    public GameManager(int size, GamePlayer playerX, GamePlayer playerO) throws IOException {
+        this.playerX = playerX;
+        this.playerO = playerO;
 
-        this.lastPlayed = player2; // Player2 is always O
+        this.isOver = false;
+
+        this.lastPlayed = playerO; // Player2 is always O
         this.size = size;
         board = new char[size][size];
         lastTurn = new int[2];
 
         initializeBoard();
 
-        // Start listening to both players in separate threads
-        new Thread(() -> listenToPlayer(player1)).start();
-        new Thread(() -> listenToPlayer(player2)).start();
+        while(!isOver) {
+            listenToPlayer(playerX);
+            listenToPlayer(playerO);
+        }
     }
 
     private void listenToPlayer(GamePlayer player) {
         try {
-            while (true) {
-                String message = player.receiveMessage();
-                Object j = JSONValue.parse(message);
+            String message = player.receiveMessage();
+            Object j = JSONValue.parse(message);
 
-                if (j instanceof JSONObject) {
-                    handlePlayerRequest(player, (JSONObject) j);
-                }
+            if (j instanceof JSONObject) {
+                handlePlayerRequest(player, (JSONObject) j);
             }
         } catch (IOException e) {
             System.out.println("Error listening to player: " + player.playerName + ", " + e.getMessage());
@@ -57,8 +57,8 @@ public class GameManager {
         JSONObject response = new JSONObject();
 
         if (isPlayerTurn) {
-            int x = ((Long) request.get("x")).intValue();
-            int y = ((Long) request.get("y")).intValue();
+            int x = ((Long) request.get("X")).intValue();
+            int y = ((Long) request.get("Y")).intValue();
 
             if (board[x][y] == EMPTY) {
                 // Process the turn
@@ -80,8 +80,11 @@ public class GameManager {
         }
         response.put("Board", boardString.toString());
 
-        // Send the response back to the player
+        // Send the response back to the other player
+        GamePlayer opponent = player.equals(playerX) ? playerO : playerX;
         player.sendMessage(response.toJSONString());
+        response.remove("State");
+        opponent.sendMessage(response.toJSONString());
     }
 
     private void initializeBoard() {
@@ -95,7 +98,7 @@ public class GameManager {
     }
 
     public synchronized void onTurn(GamePlayer player, int x, int y) {
-        if (player.equals(player1))
+        if (player.equals(playerX))
             board[x][y] = PLAYER_X;
         else
             board[x][y] = PLAYER_O;

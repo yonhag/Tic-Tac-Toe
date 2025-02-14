@@ -12,11 +12,17 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.2</junit.version>
-        <java.version>17</java.version> <!-- Use Java 17 for JavaFX compatibility -->
+        <java.version>23</java.version> <!-- Use Java 17 for JavaFX compatibility -->
     </properties>
 
     <dependencies>
         <!-- JavaFX dependencies -->
+        <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>

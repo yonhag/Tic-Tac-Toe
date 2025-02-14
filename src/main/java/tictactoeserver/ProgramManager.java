@@ -16,7 +16,7 @@ import org.json.simple.parser.ParseException;
     Is not a part of the game.
     Implements the matchmaking.
  */
-public class ProgramManager {
+public class  ProgramManager {
     private Queue<Player> playerQueue;
     private List<GameManager> games;
     private ServerSocket serverSocket;
@@ -72,6 +72,7 @@ public class ProgramManager {
                     System.err.println("Failed to parse JSON: " + e.getMessage());
                 }
             }
+            System.out.println("Finished handling client");
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
         } finally {
@@ -96,8 +97,8 @@ public class ProgramManager {
                 playerQueue.remove(player);
 
                 // Sending both players the start notification
-                player.sendMessage(getMatchStartedJson(newPlayer.getSize()));
-                newPlayer.sendMessage(getMatchStartedJson(newPlayer.getSize()));
+                newPlayer.sendMessage(getMatchStartedJson(newPlayer.getSize(), 'X', player.getName()));
+                player.sendMessage(getMatchStartedJson(newPlayer.getSize(), 'O', newPlayer.getName()));
                 startGame(newPlayer, player);
                 return;
             }
@@ -108,19 +109,21 @@ public class ProgramManager {
         playerQueue.add(newPlayer);
     }
 
-    public JSONObject getMatchStartedJson(int gameSize) {
+    public JSONObject getMatchStartedJson(int gameSize, char Symbol, String opponentName) {
         JSONObject j = new JSONObject();
+        j.put("Symbol", String.valueOf(Symbol));
         j.put("State", 0);
-        j.put("Board", "-".repeat(gameSize * gameSize));
+        j.put("Size", gameSize);
+        j.put("Opponent", opponentName);
         return j;
     }
 
-    private void startGame(Player player1, Player player2) {
+    private void startGame(Player playerX, Player playerO) {
         try {
             GameManager manager = new GameManager(
-                    player1.getSize(),
-                    new GamePlayer(player1, 'X'),
-                    new GamePlayer(player2, 'O')
+                    playerX.getSize(),
+                    new GamePlayer(playerX, 'X'),
+                    new GamePlayer(playerO, 'O')
             );
 
             // Add the paired games to the list
