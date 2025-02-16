@@ -111,11 +111,13 @@ public class GameController {
     }
 
     public void updateBoard(String board) {
-        for (int x = 0; x <  player.getSize(); x++) {
-            for (int y = 0; y < player.getSize(); y++) {
-                buttons[x][y].setText(String.valueOf(board.charAt(x+y)));
+        Platform.runLater(() -> {
+            for (int x = 0; x < player.getSize(); x++) {
+                for (int y = 0; y < player.getSize(); y++) {
+                    buttons[x][y].setText(String.valueOf(board.charAt(x + y)));
+                }
             }
-        }
+        });
     }
 
     private boolean updateServerOnMove(int x, int y) {
@@ -131,7 +133,7 @@ public class GameController {
                 // Read server response
                 JSONObject responseMessage = (JSONObject) new JSONParser().parse(reader.readLine());
                 System.out.println(responseMessage);
-                if ((int)responseMessage.get("Status") != ActionStatus.Success.getValue()) {
+                if ((Long)responseMessage.get("Status") != ActionStatus.Success.getValue()) {
                     return false;
                 }
             } catch (IOException e) {
@@ -169,32 +171,35 @@ public class GameController {
     public void handleServerMessage(String message) throws IOException {
         JSONObject json = (JSONObject) JSONValue.parse(message);
         System.out.println(json.get("State"));
-        if ((int) json.get("State") == GameStates.GameStillGoing.getValue()) {
-            isMyTurn = true;
-            statusLabel.setText("Your Turn");
-            updateBoard((String) json.get("Board"));
-        } else {
-            switch((GameStates)json.get("State")) {
-                case GameStates.EnemyWin -> statusLabel.setText("You Lost!");
-                case GameStates.Draw -> statusLabel.setText("It's a Draw!");
-                default -> statusLabel.setText("You won!");
-            }
-            disableBoard();
 
-            Platform.runLater(() -> {
-                try {
-                    returnToMenu();
-                } catch (IOException e) {
-                    e.printStackTrace();
+        Platform.runLater(() -> {
+            if ((Long) json.get("State") == GameStates.GameStillGoing.getValue()) {
+                isMyTurn = true;
+                statusLabel.setText("Your Turn");
+                updateBoard((String) json.get("Board"));
+            } else {
+                switch ((GameStates) json.get("State")) {
+                    case GameStates.EnemyWin -> statusLabel.setText("You Lost!");
+                    case GameStates.Draw -> statusLabel.setText("It's a Draw!");
+                    default -> statusLabel.setText("You won!");
                 }
-            });
-        }
+                disableBoard();
+
+                Platform.runLater(() -> {
+                    try {
+                        returnToMenu();
+                    } catch (IOException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+        });
     }
 
-    private void returnToMenu() throws IOException {
+    private void returnToMenu() throws IOException, InterruptedException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        Menu menuController = fxmlLoader.getController();
+        MenuController menuController = fxmlLoader.getController();
 
         // Possibly a new socket, or the same. Depends on your design.
         menuController.setSocket(InetAddress.getLocalHost(), serverPort);
@@ -205,7 +210,7 @@ public class GameController {
         stage.show();
 
         // Closing current window
-        Stage currentStage = (Stage) statusLabel.getScene().getWindow();
-        currentStage.close();
+        Thread.sleep(5000);
+        ((Stage) statusLabel.getScene().getWindow()).close();
     }
 }

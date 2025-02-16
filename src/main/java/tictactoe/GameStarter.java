@@ -14,7 +14,7 @@ public class GameStarter extends Application {
     private void openMenuWindow() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        Menu menuController = fxmlLoader.getController();
+        MenuController menuController = fxmlLoader.getController();
         menuController.setSocket(InetAddress.getLocalHost(), serverPort);
 
         Stage stage = new Stage();

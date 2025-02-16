@@ -17,7 +17,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 
-public class Menu {
+public class MenuController {
 
     @FXML private TextField nameField;
     @FXML private Spinner<Integer> boardSizeSpinner;
@@ -39,15 +39,19 @@ public class Menu {
         // Start a separate thread to continuously listen for messages from the server
         new Thread(() -> {
             try {
-                String serverMessage;
-                while ((serverMessage = reader.readLine()) != null) {
-                    System.out.println("Server: " + serverMessage); // Process or log the received message
-                    handleServerMessage(serverMessage);
+                String message = reader.readLine(); // read exactly one line
+                if (message != null) {
+                    // handle or process the single message
+                    handleServerMessage(message);
                 }
             } catch (IOException e) {
-                System.err.println("Error reading server messages: " + e.getMessage());
+                System.err.println("Error reading server message: " + e.getMessage());
             }
         }).start();
+    }
+
+    public void setNameField(String name) {
+        this.nameField.setText(name);
     }
 
     /**
@@ -91,6 +95,9 @@ public class Menu {
         stage.setTitle("Tic Tac Toe Game Against " + opponentName);
         stage.setScene(scene);
         stage.show();
+
+        // Closing menu window as it is not needed anymore
+        ((Stage) nameField.getScene().getWindow()).close();
     }
 
     @FXML
