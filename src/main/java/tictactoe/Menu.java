@@ -22,8 +22,6 @@ public class Menu {
     @FXML private TextField nameField;
     @FXML private Spinner<Integer> boardSizeSpinner;
 
-    private Boolean isOpponentFound;
-
     private Socket server;
         private PrintWriter writer;
         private BufferedReader reader;
@@ -37,7 +35,6 @@ public class Menu {
         InputStream inputStream = server.getInputStream();
         reader = new BufferedReader(new InputStreamReader(inputStream));
         writer = new PrintWriter(server.getOutputStream(), true);
-        isOpponentFound = false;
 
         // Start a separate thread to continuously listen for messages from the server
         new Thread(() -> {
@@ -63,9 +60,12 @@ public class Menu {
             JSONObject json = (JSONObject) new JSONParser().parse(message);
             // Sign means that this is a game start message
             if (json.containsKey("Symbol")) {
-                Player player = new Player(Math.toIntExact((Long) json.get("Size")),
+                Player player = new Player(
+                        Math.toIntExact((Long) json.get("Size")),
                         nameField.getText(),
-                        json.get("Symbol").toString().charAt(0));
+                        json.get("Symbol").toString().charAt(0)
+                );
+
                 String opponentName = (String) json.get("Opponent");
 
                 Platform.runLater(() -> {

@@ -1,14 +1,13 @@
 package tictactoe;
 
-public enum GameStates {
-    GameStillGoing(0),
-    YouWin(1),
-    EnemyWin(2),
-    Draw(3);
+public enum ActionStatus {
+    Success(0),
+    InvalidMove(1),
+    NotYourTurn(2);
 
     private final int value;
 
-    GameStates(int value) {
+    ActionStatus(int value) {
         this.value = value;
     }
 

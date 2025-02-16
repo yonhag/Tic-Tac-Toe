@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 public class GameStarter extends Application {
-    private final int serverPort = 8000;
+    public static final int serverPort = 8000;
 
-    private Menu openMenuWindow() throws IOException {
+    private void openMenuWindow() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
         Menu menuController = fxmlLoader.getController();
@@ -21,8 +21,6 @@ public class GameStarter extends Application {
         stage.setTitle("Tic Tac Toe Menu");
         stage.setScene(scene);
         stage.show();
-
-        return menuController;
     }
 
     @Override

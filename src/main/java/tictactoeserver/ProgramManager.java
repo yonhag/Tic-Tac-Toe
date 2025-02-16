@@ -1,7 +1,6 @@
 package tictactoeserver;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
@@ -22,14 +21,14 @@ public class  ProgramManager {
     private ServerSocket serverSocket;
     private final int serverPort = 8000;
 
-    public ProgramManager() throws IOException {
+    public ProgramManager() throws Exception {
         playerQueue = new LinkedList<>();
         games = new LinkedList<>();
 
         startServer();
     }
 
-    private void startServer() {
+    private void startServer() throws Exception {
         try {
             serverSocket = new ServerSocket(serverPort);
             System.out.println("Server started on port: " + serverPort);
@@ -41,6 +40,7 @@ public class  ProgramManager {
                 new Thread(() -> handleClient(clientSocket)).start();
             }
         } catch (IOException e) {
+            stop();
             System.err.println("Error starting server: " + e.getMessage());
         }
     }
@@ -49,38 +49,29 @@ public class  ProgramManager {
     Function that adds the player to queue
     */
     private void handleClient(Socket clientSocket) {
-        try (
-                InputStream inputStream = clientSocket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                OutputStream outputStream = clientSocket.getOutputStream();
-                PrintWriter writer = new PrintWriter(outputStream, true)
-        ) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println("Received: " + line);
+        try {
+            InputStream inputStream = clientSocket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
-                try {
-                    JSONParser parser = new JSONParser();
-                    JSONObject json = (JSONObject)parser.parse(line);
+            String line = reader.readLine();
+            System.out.println("Received: " + line);
 
-                    String playerName = (String) json.get("Player_Name");
-                    int gameSize = ((Long) json.get("Board_Size")).intValue();
+            try {
+                JSONParser parser = new JSONParser();
+                JSONObject json = (JSONObject)parser.parse(line);
 
-                    onMenuSubmitted(new Player(gameSize, playerName, clientSocket));
-                } catch (ParseException e) {
-                    System.out.println("Invalid JSON format: " + line);
-                    System.err.println("Failed to parse JSON: " + e.getMessage());
-                }
+                String playerName = (String) json.get("Player_Name");
+                int gameSize = ((Long) json.get("Board_Size")).intValue();
+
+                onMenuSubmitted(new Player(gameSize, playerName, clientSocket));
+            } catch (ParseException e) {
+                System.out.println("Invalid JSON format: " + line);
+                System.err.println("Failed to parse JSON: " + e.getMessage());
             }
             System.out.println("Finished handling client");
+
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
-        } finally {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                System.err.println("Error closing client socket: " + e.getMessage());
-            }
         }
     }
 

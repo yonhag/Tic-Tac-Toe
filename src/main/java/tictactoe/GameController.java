@@ -1,16 +1,24 @@
 package tictactoe;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 
 import static java.lang.Thread.sleep;
+import static tictactoe.GameStarter.serverPort;
 
 /*
     Controls the game window itself.
@@ -46,6 +54,16 @@ public class GameController {
         writer = new PrintWriter(server.getOutputStream(), true);
 
         createBoard();
+
+        if (!isMyTurn) {
+            new Thread(() -> {
+                try {
+                    startListeningForOpponent();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
     }
 
     private void createBoard() {
@@ -74,112 +92,58 @@ public class GameController {
 
         if (!button.getText().isEmpty()) return;
 
-        button.setText(String.valueOf(playerSymbol));
         int[] coordinates = (int[]) button.getUserData();
         int x = coordinates[0];
         int y = coordinates[1];
 
-        sendMove(x, y);
-
-
+        new Thread(() -> {
+            if (updateServerOnMove(x, y)) {
+                button.setText(String.valueOf(playerSymbol));
+                isMyTurn = false;
+                statusLabel.setText("Opponent's Turn");
+                try {
+                    startListeningForOpponent();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
     }
 
-    public void updateBoard(int x, int y) {
-        buttons[x][y].setText(playerSymbol == 'X' ? "O" : "X");
-
-        if (checkWin()) {
-            statusLabel.setText("Opponent Won!");
-            disableBoard();
-        } else if (isDraw()) {
-            statusLabel.setText("It's a Draw!");
-            disableBoard();
-        } else {
-            isMyTurn = true;
-            statusLabel.setText("Your turn!");
+    public void updateBoard(String board) {
+        for (int x = 0; x <  player.getSize(); x++) {
+            for (int y = 0; y < player.getSize(); y++) {
+                buttons[x][y].setText(String.valueOf(board.charAt(x+y)));
+            }
         }
     }
 
-    private void sendMove(int x, int y) {
+    private boolean updateServerOnMove(int x, int y) {
         JSONObject json = new JSONObject();
         json.put("X", x);
         json.put("Y", y);
 
         // Sending the message
         if (writer != null) {
-            writer.println(json.toString());
+            writer.println(json);
             System.out.println("Message sent: " + json);
+            try {
+                // Read server response
+                JSONObject responseMessage = (JSONObject) new JSONParser().parse(reader.readLine());
+                System.out.println(responseMessage);
+                if ((int)responseMessage.get("Status") != ActionStatus.Success.getValue()) {
+                    return false;
+                }
+            } catch (IOException e) {
+                System.err.println("Error reading server response: " + e.getMessage());
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             System.err.println("Writer is not initialized.");
         }
-    }
 
-    private boolean checkWin() {
-        return checkRows() || checkColumns() || checkDiagonals();
-    }
-
-    private boolean checkRows() {
-        for (int row = 0; row < boardSize; row++) {
-            boolean win = true;
-            for (int col = 1; col < boardSize; col++) {
-                if (!buttons[row][col].getText().equals(buttons[row][col - 1].getText()) ||
-                        buttons[row][col].getText().isEmpty()) {
-                    win = false;
-                    break;
-                }
-            }
-            if (win) return true;
-        }
         return false;
-    }
-
-    private boolean checkColumns() {
-        for (int col = 0; col < boardSize; col++) {
-            boolean win = true;
-            for (int row = 1; row < boardSize; row++) {
-                if (!buttons[row][col].getText().equals(buttons[row - 1][col].getText()) ||
-                        buttons[row][col].getText().isEmpty()) {
-                    win = false;
-                    break;
-                }
-            }
-            if (win) return true;
-        }
-        return false;
-    }
-
-    private boolean checkDiagonals() {
-        String mainSymbol = buttons[0][0].getText();
-        boolean winMainDiagonal = !mainSymbol.isEmpty(); // Ensure the first cell is not empty
-
-        for (int i = 1; i < boardSize; i++) {
-            if (!buttons[i][i].getText().equals(mainSymbol)) {
-                winMainDiagonal = false;
-                break;
-            }
-        }
-
-        String antiSymbol = buttons[0][boardSize - 1].getText();
-        boolean winAntiDiagonal = !antiSymbol.isEmpty(); // Ensure the first cell is not empty
-
-        for (int i = 1; i < boardSize; i++) {
-            if (!buttons[i][boardSize - i - 1].getText().equals(antiSymbol)) {
-                winAntiDiagonal = false;
-                break;
-            }
-        }
-
-        return winMainDiagonal || winAntiDiagonal;
-    }
-
-    private boolean isDraw() {
-        for (int row = 0; row < boardSize; row++) {
-            for (int col = 0; col < boardSize; col++) {
-                if (buttons[row][col].getText().isEmpty()) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     public Player getPlayer() {
@@ -202,27 +166,46 @@ public class GameController {
             }
     }
 
-    public void handleServerMessage(String message) {
-        JSONObject json = (JSONObject)JSONValue.parse(message);
+    public void handleServerMessage(String message) throws IOException {
+        JSONObject json = (JSONObject) JSONValue.parse(message);
+        System.out.println(json.get("State"));
+        if ((int) json.get("State") == GameStates.GameStillGoing.getValue()) {
+            isMyTurn = true;
+            statusLabel.setText("Your Turn");
+            updateBoard((String) json.get("Board"));
+        } else {
+            switch((GameStates)json.get("State")) {
+                case GameStates.EnemyWin -> statusLabel.setText("You Lost!");
+                case GameStates.Draw -> statusLabel.setText("It's a Draw!");
+                default -> statusLabel.setText("You won!");
+            }
+            disableBoard();
 
-        switch((GameStates)json.get("State"))
-        {
-            case GameStates.GameStillGoing:
-                isMyTurn = true;
-                statusLabel.setText("Your Turn");
-                break;
-            case GameStates.Tie:
-                statusLabel.setText("It's a Draw!");
-                disableBoard();
-                break;
-            case GameStates.EnemyWin:
-                statusLabel.setText("Enemy won!");
-                disableBoard();
-                break;
-            case GameStates.YouWin:
-                statusLabel.setText("You won!");
-                disableBoard();
-                break;
+            Platform.runLater(() -> {
+                try {
+                    returnToMenu();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         }
+    }
+
+    private void returnToMenu() throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
+        Scene scene = new Scene(fxmlLoader.load());
+        Menu menuController = fxmlLoader.getController();
+
+        // Possibly a new socket, or the same. Depends on your design.
+        menuController.setSocket(InetAddress.getLocalHost(), serverPort);
+
+        Stage stage = new Stage();
+        stage.setTitle("Tic Tac Toe Menu");
+        stage.setScene(scene);
+        stage.show();
+
+        // Closing current window
+        Stage currentStage = (Stage) statusLabel.getScene().getWindow();
+        currentStage.close();
     }
 }
