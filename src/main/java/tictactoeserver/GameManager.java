@@ -26,7 +26,7 @@ public class GameManager {
 
         this.isOver = false;
 
-        this.lastPlayed = playerO; // Player2 is always O
+        this.lastPlayed = playerO; // Since PlayerX Starts
         this.size = size;
         board = new char[size][size];
         lastTurn = new int[2];
@@ -90,6 +90,7 @@ public class GameManager {
         response.put("State", getGameState(player).getValue());
         player.sendMessage(response.toJSONString());
 
+        System.out.println(response);
 
         response.remove("Status");
         response.put("State", getGameState(opponent).getValue());
