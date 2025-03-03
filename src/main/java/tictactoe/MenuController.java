@@ -12,10 +12,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
+import java.net.*;
 
 public class MenuController {
 
@@ -27,10 +24,14 @@ public class MenuController {
         private BufferedReader reader;
 
     public void setSocket(InetAddress ip, int port) throws IOException {
-        server = new Socket();
-        SocketAddress socketAddress = new InetSocketAddress(ip, port);
-        server.connect(socketAddress);
-
+        try {
+            server = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(ip, port);
+            server.connect(socketAddress);
+        } catch(ConnectException e) {
+            System.err.println("ERROR: Server isn't available");
+            System.exit(-1);
+        }
         // Creating streams for use
         InputStream inputStream = server.getInputStream();
         reader = new BufferedReader(new InputStreamReader(inputStream));

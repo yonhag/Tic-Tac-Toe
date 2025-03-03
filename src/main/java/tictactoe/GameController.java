@@ -10,14 +10,10 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-
-import static tictactoe.GameStarter.serverPort;
 
 /*
     Controls the game window itself.
@@ -36,6 +32,7 @@ public class GameController {
     private Socket server;
     private PrintWriter writer;
     private BufferedReader reader;
+    private static final int serverPort = 8000;
 
     public void startGame(Player player, Socket socket) throws IOException {
         this.player = player;

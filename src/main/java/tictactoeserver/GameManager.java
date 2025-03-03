@@ -69,6 +69,7 @@ public class GameManager {
             if (board[x][y] == EMPTY) {
                 onTurn(player, x, y);
                 response.put("Status", ActionStatus.Success.getValue());
+                turns++;
             } else {
                 response.put("Status", ActionStatus.InvalidMove.getValue());
             }
@@ -95,6 +96,8 @@ public class GameManager {
         response.remove("Status");
         response.put("State", getGameState(opponent).getValue());
         opponent.sendMessage(response.toJSONString());
+
+
     }
 
     private void initializeBoard() {
@@ -123,12 +126,12 @@ public class GameManager {
     }
 
     private GameStates getGameState(GamePlayer player) {
-        if (isDraw())
-            return GameStates.Draw;
-
         GamePlayer winner = getGameWinner();
         if (winner == null)
-            return GameStates.GameStillGoing;
+            if (isDraw())
+                return GameStates.Draw;
+            else
+                return GameStates.GameStillGoing;
 
         if (winner.equals(player))
             return GameStates.YouWin;
@@ -227,6 +230,8 @@ public class GameManager {
     }
 
     private boolean isDraw() {
+        System.out.println(turns);
+        System.out.println(size * size);
         return turns == size * size;
     }
 
