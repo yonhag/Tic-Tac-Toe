@@ -5,7 +5,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
-public class Signup {
+public class LoginController {
 
     @FXML
     private TextField loginUsername;

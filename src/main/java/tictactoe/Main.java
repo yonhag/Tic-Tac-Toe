@@ -25,8 +25,19 @@ public class Main extends Application {
         return menuController;
     }
 
+    private void openLoginMenu() throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("login.fxml"));
+        Scene scene = new Scene(fxmlLoader.load());
+        LoginController ctrler = fxmlLoader.getController();
+
+        Stage stage = new Stage();
+        stage.setTitle("Tic Tac Toe");
+        stage.setScene(scene);
+        stage.show();
+    }
+
     @Override
     public void start(Stage stage) throws Exception {
-        openMenuWindow();
+        openLoginMenu();
     }
 }
