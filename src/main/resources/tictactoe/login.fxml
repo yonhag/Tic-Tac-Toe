@@ -2,7 +2,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="tictactoe.LoginController">
     <TabPane layoutX="10" layoutY="10" prefHeight="350" prefWidth="400" AnchorPane.topAnchor="0"
              AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
         <!-- Login Tab -->
@@ -29,7 +29,7 @@
                 <TextField fx:id="signupUsername" promptText="Choose a username"/>
                 <Label text="Password:"/>
                 <PasswordField fx:id="signupPassword" promptText="Choose a password"/>
-                <Button text="Signup" fx:id="signupButton"/>
+                <Button text="Signup" fx:id="signupButton" />
             </VBox>
         </Tab>
     </TabPane>

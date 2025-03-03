@@ -11,18 +11,6 @@ import java.net.InetAddress;
 public class Main extends Application {
     private final int serverPort = 8000;
 
-    private void openMenuWindow() throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
-        Scene scene = new Scene(fxmlLoader.load());
-        MenuController menuController = fxmlLoader.getController();
-        menuController.setSocket(InetAddress.getLocalHost(), serverPort);
-
-        Stage stage = new Stage();
-        stage.setTitle("Tic Tac Toe Menu");
-        stage.setScene(scene);
-        stage.show();
-    }
-
     private void openLoginMenu() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("login.fxml"));
         Scene scene = new Scene(fxmlLoader.load());

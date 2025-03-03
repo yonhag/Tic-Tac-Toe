@@ -8,12 +8,6 @@
     <!-- Title -->
     <Label text="Tic Tac Toe Menu" style="-fx-font-size: 20; -fx-font-weight: bold;" />
 
-    <!-- Player Name Input -->
-    <HBox spacing="10" alignment="CENTER">
-        <Label text="Player Name:" />
-        <TextField fx:id="nameField" promptText="Enter your name" />
-    </HBox>
-
     <!-- Board Size Selector -->
     <HBox spacing="10" alignment="CENTER">
         <Label text="Board Size:" />

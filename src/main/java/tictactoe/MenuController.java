@@ -5,7 +5,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -16,14 +15,15 @@ import java.net.*;
 
 public class MenuController {
 
-    @FXML private TextField nameField;
     @FXML private Spinner<Integer> boardSizeSpinner;
+    private String username;
 
     private Socket server;
         private PrintWriter writer;
         private BufferedReader reader;
 
-    public void setSocket(InetAddress ip, int port) throws IOException {
+    public void setParameters(InetAddress ip, int port, String username) throws IOException {
+        this.username = username;
         try {
             server = new Socket();
             SocketAddress socketAddress = new InetSocketAddress(ip, port);
@@ -51,10 +51,6 @@ public class MenuController {
         }).start();
     }
 
-    public void setNameField(String name) {
-        this.nameField.setText(name);
-    }
-
     /**
      * Handles incoming server messages.
      * You can modify this function to process different message types.
@@ -67,7 +63,7 @@ public class MenuController {
             if (json.containsKey("Symbol")) {
                 Player player = new Player(
                         Math.toIntExact((Long) json.get("Size")),
-                        nameField.getText(),
+                        username,
                         json.get("Symbol").toString().charAt(0)
                 );
 
@@ -98,23 +94,16 @@ public class MenuController {
         stage.show();
 
         // Closing menu window as it is not needed anymore
-        ((Stage) nameField.getScene().getWindow()).close();
+        ((Stage) boardSizeSpinner.getScene().getWindow()).close();
     }
 
     @FXML
     private void handleSubmit() throws IOException {
-        String playerName = nameField.getText().trim();
         int boardSize = boardSizeSpinner.getValue();
-
-        if (playerName.isEmpty()) {
-            nameField.setPromptText("Name is required!");
-            nameField.setStyle("-fx-border-color: red;");
-            return;
-        }
 
         if (server.isConnected()) {
             JSONObject j = new JSONObject();
-            j.put("Player_Name", playerName);
+            j.put("Player_Name", username);
             j.put("Board_Size", boardSize);
 
             writer.println(j.toString());
@@ -122,7 +111,7 @@ public class MenuController {
     }
 
     public void onOpponentFound() {
-        Stage stage = (Stage) nameField.getScene().getWindow();
+        Stage stage = (Stage) boardSizeSpinner.getScene().getWindow();
         stage.close();
     }
 }

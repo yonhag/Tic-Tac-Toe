@@ -4,6 +4,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
+import java.io.IOException;
 
 public class LoginController {
 
@@ -31,37 +34,54 @@ public class LoginController {
     @FXML
     private Button signupButton;
 
-    // Database connection placeholder
-    private DatabaseHandler databaseHandler;
-
-    public void initialize() {
-        databaseHandler = new DatabaseHandler(); // Initialize database connection
-
-        loginButton.setOnAction(event -> handleLogin());
-        signupButton.setOnAction(event -> handleSignup());
+    public void initialize() { // Initialize database connection
+        loginButton.setOnAction(event -> {
+            try {
+                handleLogin();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        signupButton.setOnAction(event -> {
+            try {
+                handleSignup();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    private void handleLogin() {
+    private void handleLogin() throws IOException {
         String username = loginUsername.getText();
         String password = loginPassword.getText();
 
-        if (databaseHandler.validateLogin(username, password)) {
-            System.out.println("Login successful!");
+        if (validateLogin(username, password)) {
+            Utilities.openMenuWindow(username);
+            ((Stage) loginButton.getScene().getWindow()).close();
         } else {
             System.out.println("Invalid username or password.");
         }
     }
 
-    private void handleSignup() {
+    private boolean validateLogin(String username, String password) {
+        return true;
+    }
+
+    private void handleSignup() throws IOException {
         String fullName = signupFullName.getText();
         String email = signupEmail.getText();
         String username = signupUsername.getText();
         String password = signupPassword.getText();
 
-        if (databaseHandler.createUser(fullName, email, username, password)) {
-            System.out.println("Signup successful! You can now log in.");
+        if (createUser(fullName, email, username, password)) {
+            Utilities.openMenuWindow(username);
+            ((Stage) loginButton.getScene().getWindow()).close();
         } else {
             System.out.println("Signup failed. Username or email may already be taken.");
         }
     }
+
+    private boolean createUser(String name, String email, String username, String password) {
+        return true;
+    };
 }
