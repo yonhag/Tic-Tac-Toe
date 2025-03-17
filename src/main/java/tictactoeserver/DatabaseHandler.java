@@ -5,17 +5,13 @@ import org.mindrot.jbcrypt.BCrypt;
 
 public class DatabaseHandler {
     // 1) This URL connects to MySQL *without specifying a database*, allowing us to create one if needed.
-    private static final String BASE_URL = "jdbc:mysql://localhost:3306/?allowMultiQueries=true";
-    private static final String DB_NAME  = "TicTacToe";  // Matches the script
-    // 2) Once the database is confirmed/created, we’ll connect to it using this URL.
-    private static final String DB_URL   = "jdbc:mysql://localhost:3306/TicTacToe";
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/tictactoe?useSSL=false&serverTimezone=UTC";
 
     // MySQL credentials
     private static final String USER     = "root";   // Change to your MySQL username
     private static final String PASSWORD = "yona";   // Change to your MySQL password
 
     // Script to create the database, tables, etc. if they don't exist
-    // Note: We updated `password` to VARCHAR(60) for BCrypt compatibility.
     private static final String CREATE_DB_SCRIPT = """
         SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS;
         SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS;
@@ -67,7 +63,8 @@ public class DatabaseHandler {
     /**
      * Constructor. Automatically ensures the database and tables exist.
      */
-    public DatabaseHandler() {
+    public DatabaseHandler() throws ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
         createDatabaseIfNotExists();
     }
 
@@ -76,7 +73,7 @@ public class DatabaseHandler {
      * 2) Runs the SQL script to create the `TicTacToe` schema and tables if they do not exist.
      */
     private void createDatabaseIfNotExists() {
-        try (Connection conn = DriverManager.getConnection(BASE_URL, USER, PASSWORD);
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASSWORD);
              Statement stmt = conn.createStatement()) {
             stmt.execute(CREATE_DB_SCRIPT);
         } catch (SQLException e) {
@@ -121,7 +118,7 @@ public class DatabaseHandler {
      * 1) Hash the plain-text password with BCrypt.
      * 2) Insert hashed password and other details into the database.
      */
-    public boolean createUser(String name, String email, String username, String plainTextPassword) {
+    public boolean createUser(String username, String plainTextPassword, String name, String email) {
         String query = "INSERT INTO Users (username, password, name, email) VALUES (?, ?, ?, ?)";
         try (Connection conn = connectToGameDB();
              PreparedStatement stmt = conn.prepareStatement(query)) {

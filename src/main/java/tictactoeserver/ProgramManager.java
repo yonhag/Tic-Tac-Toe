@@ -16,15 +16,16 @@ import org.json.simple.parser.ParseException;
     Implements the matchmaking.
  */
 public class  ProgramManager {
-    private Queue<Player> playerQueue;
-    private List<GameManager> games;
+    private final Queue<Player> playerQueue;
+    private final List<GameManager> games;
     private ServerSocket serverSocket;
+    private final DatabaseHandler db;
     private final int serverPort = 8000;
 
     public ProgramManager() throws Exception {
         playerQueue = new LinkedList<>();
         games = new LinkedList<>();
-
+        db = new DatabaseHandler();
         startServer();
     }
 
@@ -37,7 +38,13 @@ public class  ProgramManager {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("New client connected: " + clientSocket.getInetAddress());
 
-                new Thread(() -> handleClient(clientSocket)).start();
+                new Thread(() -> {
+                    try {
+                        determineRequestType(clientSocket);
+                    } catch (IOException | ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).start();
             }
         } catch (IOException e) {
             stop();
@@ -45,43 +52,69 @@ public class  ProgramManager {
         }
     }
 
+    private void determineRequestType(Socket socket) throws IOException, ParseException {
+        InputStream inputStream = socket.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+        String line = reader.readLine();
+        System.out.println("Received: " + line);
+
+        RequestTypes type = RequestTypes.getRequestType(line);
+
+        line = line.substring(1);
+        JSONParser parser = new JSONParser();
+        JSONObject json = (JSONObject)parser.parse(line);
+
+        switch (type) {
+            case Signup -> signup(socket, json);
+            case Login -> login(socket, json);
+            case EnterQueue -> handleClient(socket, json);
+            default -> throw new IOException();
+        }
+    }
+
+    private void signup(Socket socket, JSONObject json) throws IOException {
+        OutputStream outputStream = socket.getOutputStream();
+        PrintWriter writer = new PrintWriter(outputStream, true);
+
+        String username = (String)json.get("username");
+        String password = (String)json.get("password");
+        String name = (String)json.get("name");
+        String email = (String)json.get("username");
+
+        boolean status = db.createUser(username, password, name, email);
+        writer.println(getAccountSystemResponse(status).toJSONString());
+    }
+
+    private void login(Socket socket, JSONObject json) throws IOException {
+        OutputStream outputStream = socket.getOutputStream();
+        PrintWriter writer = new PrintWriter(outputStream, true);
+
+        boolean status = db.validateLogin((String)json.get("username"), (String)json.get("password"));
+        writer.println(getAccountSystemResponse(status).toJSONString());
+    }
+
     /*
     Function that adds the player to queue
     */
-    private void handleClient(Socket clientSocket) {
+    private void handleClient(Socket socket, JSONObject json) {
+        String playerName = (String) json.get("Player_Name");
+        int gameSize = ((Long) json.get("Board_Size")).intValue();
         try {
-            InputStream inputStream = clientSocket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-            String line = reader.readLine();
-            System.out.println("Received: " + line);
-
-            try {
-                JSONParser parser = new JSONParser();
-                JSONObject json = (JSONObject)parser.parse(line);
-
-                String playerName = (String) json.get("Player_Name");
-                int gameSize = ((Long) json.get("Board_Size")).intValue();
-
-                onMenuSubmitted(new Player(gameSize, playerName, clientSocket));
-            } catch (ParseException e) {
-                System.out.println("Invalid JSON format: " + line);
-                System.err.println("Failed to parse JSON: " + e.getMessage());
-            }
+            onMenuSubmitted(new Player(gameSize, playerName, socket));
             System.out.println("Finished handling client");
-
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
         }
     }
 
-    public void stop() throws Exception {
+    private void stop() throws Exception {
         if (serverSocket != null && !serverSocket.isClosed()) {
             serverSocket.close();
         }
     }
 
-    public void onMenuSubmitted(Player newPlayer) throws IOException {
+    private void onMenuSubmitted(Player newPlayer) throws IOException {
         for (Player player : playerQueue) {
             if (player.getSize() == newPlayer.getSize()) {
                 System.out.println("Opponent found!");
@@ -100,12 +133,18 @@ public class  ProgramManager {
         playerQueue.add(newPlayer);
     }
 
-    public JSONObject getMatchStartedJson(int gameSize, char Symbol, String opponentName) {
+    private JSONObject getMatchStartedJson(int gameSize, char Symbol, String opponentName) {
         JSONObject j = new JSONObject();
         j.put("Symbol", String.valueOf(Symbol));
         j.put("State", 0);
         j.put("Size", gameSize);
         j.put("Opponent", opponentName);
+        return j;
+    }
+
+    private JSONObject getAccountSystemResponse(boolean isSuccessful) {
+        JSONObject j = new JSONObject();
+        j.put("Status", isSuccessful);
         return j;
     }
 
