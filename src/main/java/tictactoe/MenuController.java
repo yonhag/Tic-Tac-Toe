@@ -22,19 +22,23 @@ public class MenuController {
         private PrintWriter writer;
         private BufferedReader reader;
 
-    public void setParameters(InetAddress ip, int port, String username) throws IOException {
+    public void setParameters(InetAddress ip, int port, String username, Socket socket) throws IOException {
         this.username = username;
-        try {
-            server = new Socket();
-            SocketAddress socketAddress = new InetSocketAddress(ip, port);
-            server.connect(socketAddress);
-        } catch(ConnectException e) {
-            System.err.println("ERROR: Server isn't available");
-            System.exit(-1);
+        if (socket == null) {
+            try {
+                server = new Socket();
+                SocketAddress socketAddress = new InetSocketAddress(ip, port);
+                server.connect(socketAddress);
+            } catch (ConnectException e) {
+                System.err.println("ERROR: Server isn't available");
+                System.exit(-1);
+            }
+        }
+        else {
+            server = socket;
         }
         // Creating streams for use
-        InputStream inputStream = server.getInputStream();
-        reader = new BufferedReader(new InputStreamReader(inputStream));
+        reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
         writer = new PrintWriter(server.getOutputStream(), true);
 
         // Start a separate thread to continuously listen for messages from the server

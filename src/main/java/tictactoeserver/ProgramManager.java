@@ -4,11 +4,11 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.List;
 
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 /*
     Controls the menu of the program, sets up games and disconnects them.
@@ -18,85 +18,35 @@ import org.json.simple.parser.ParseException;
 public class  ProgramManager {
     private final Queue<Player> playerQueue;
     private final List<GameManager> games;
-    private ServerSocket serverSocket;
-    private final DatabaseHandler db;
-    private final int serverPort = 8000;
 
     public ProgramManager() throws Exception {
         playerQueue = new LinkedList<>();
         games = new LinkedList<>();
-        db = new DatabaseHandler();
-        startServer();
     }
 
-    private void startServer() throws Exception {
-        try {
-            serverSocket = new ServerSocket(serverPort);
-            System.out.println("Server started on port: " + serverPort);
+    public void addUser(Socket socket, String username) {
+        new Thread(() -> {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                String input;
+                StringBuilder jsonString = new StringBuilder();
 
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("New client connected: " + clientSocket.getInetAddress());
+                while ((input = in.readLine()) != null) {
+                    jsonString.append(input);
+                }
 
-                new Thread(() -> {
-                    try {
-                        determineRequestType(clientSocket);
-                    } catch (IOException | ParseException e) {
-                        throw new RuntimeException(e);
-                    }
-                }).start();
+                // Parse the received JSON string
+                JSONObject json = (JSONObject) new org.json.simple.parser.JSONParser().parse(jsonString.toString());
+
+                // Handle the client request
+                handleClient(socket, json);
+
+            } catch (IOException | ParseException e) {
+                System.err.println("Error handling user input for " + username + ": " + e.getMessage());
             }
-        } catch (IOException e) {
-            stop();
-            System.err.println("Error starting server: " + e.getMessage());
-        }
+        }).start();
     }
 
-    private void determineRequestType(Socket socket) throws IOException, ParseException {
-        InputStream inputStream = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
-        String line = reader.readLine();
-        System.out.println("Received: " + line);
-
-        RequestTypes type = RequestTypes.getRequestType(line);
-
-        line = line.substring(1);
-        JSONParser parser = new JSONParser();
-        JSONObject json = (JSONObject)parser.parse(line);
-
-        switch (type) {
-            case Signup -> signup(socket, json);
-            case Login -> login(socket, json);
-            case EnterQueue -> handleClient(socket, json);
-            default -> throw new IOException();
-        }
-    }
-
-    private void signup(Socket socket, JSONObject json) throws IOException {
-        OutputStream outputStream = socket.getOutputStream();
-        PrintWriter writer = new PrintWriter(outputStream, true);
-
-        String username = (String)json.get("username");
-        String password = (String)json.get("password");
-        String name = (String)json.get("name");
-        String email = (String)json.get("username");
-
-        boolean status = db.createUser(username, password, name, email);
-        writer.println(getAccountSystemResponse(status).toJSONString());
-    }
-
-    private void login(Socket socket, JSONObject json) throws IOException {
-        OutputStream outputStream = socket.getOutputStream();
-        PrintWriter writer = new PrintWriter(outputStream, true);
-
-        boolean status = db.validateLogin((String)json.get("username"), (String)json.get("password"));
-        writer.println(getAccountSystemResponse(status).toJSONString());
-    }
-
-    /*
-    Function that adds the player to queue
-    */
     private void handleClient(Socket socket, JSONObject json) {
         String playerName = (String) json.get("Player_Name");
         int gameSize = ((Long) json.get("Board_Size")).intValue();
@@ -105,12 +55,6 @@ public class  ProgramManager {
             System.out.println("Finished handling client");
         } catch (IOException e) {
             System.err.println("Error handling client: " + e.getMessage());
-        }
-    }
-
-    private void stop() throws Exception {
-        if (serverSocket != null && !serverSocket.isClosed()) {
-            serverSocket.close();
         }
     }
 
@@ -139,12 +83,6 @@ public class  ProgramManager {
         j.put("State", 0);
         j.put("Size", gameSize);
         j.put("Opponent", opponentName);
-        return j;
-    }
-
-    private JSONObject getAccountSystemResponse(boolean isSuccessful) {
-        JSONObject j = new JSONObject();
-        j.put("Status", isSuccessful);
         return j;
     }
 

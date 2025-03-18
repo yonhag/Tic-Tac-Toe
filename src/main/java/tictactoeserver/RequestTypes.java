@@ -22,6 +22,6 @@ public enum RequestTypes {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Invalid request type: " + c);
+        throw new IllegalArgumentException("Invalid request type: " + request);
     }
 }

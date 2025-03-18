@@ -5,8 +5,15 @@ import javafx.scene.control.Button;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.*;
 
 public class LoginController {
 
@@ -33,6 +40,8 @@ public class LoginController {
 
     @FXML
     private Button signupButton;
+
+    Socket server;
 
     public void initialize() { // Initialize database connection
         loginButton.setOnAction(event -> {
@@ -64,7 +73,30 @@ public class LoginController {
     }
 
     private boolean validateLogin(String username, String password) {
-        return true;
+        JSONObject j = new JSONObject();
+        j.put("Username", username);
+        j.put("Password", password);
+        String request = RequestTypes.Login.getValue() + j.toString();
+
+        try {
+            server = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(Utilities.serverIP, Utilities.serverPort);
+            server.connect(socketAddress);
+
+            PrintWriter writer = new PrintWriter(server.getOutputStream(), true);
+            writer.println(request);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
+            JSONObject response = (JSONObject) new JSONParser().parse(reader.readLine());
+
+            return response.containsKey("Status") && (Boolean)response.get("Status");
+        } catch(IOException e) {
+            System.err.println("ERROR: Server isn't available");
+            System.exit(-1);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 
     private void handleSignup() throws IOException {
@@ -73,7 +105,7 @@ public class LoginController {
         String username = signupUsername.getText();
         String password = signupPassword.getText();
 
-        if (createUser(fullName, email, username, password)) {
+        if (signup(fullName, email, username, password)) {
             Utilities.openMenuWindow(username);
             ((Stage) loginButton.getScene().getWindow()).close();
         } else {
@@ -81,7 +113,32 @@ public class LoginController {
         }
     }
 
-    private boolean createUser(String name, String email, String username, String password) {
-        return true;
+    private boolean signup(String name, String email, String username, String password) {
+        JSONObject j = new JSONObject();
+        j.put("Username", username);
+        j.put("Password", password);
+        j.put("Email", email);
+        j.put("Name", name);
+        String request = RequestTypes.Signup.getValue() + j.toString();
+
+        try {
+            server = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(Utilities.serverIP, Utilities.serverPort);
+            server.connect(socketAddress);
+
+            PrintWriter writer = new PrintWriter(server.getOutputStream(), true);
+            writer.println(request);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
+            JSONObject response = (JSONObject) new JSONParser().parse(reader.readLine());
+
+            return response.containsKey("Status") && (Boolean)response.get("Status");
+        } catch(IOException e) {
+            System.err.println("ERROR: Server isn't available");
+            System.exit(-1);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     };
 }
