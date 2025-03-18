@@ -246,8 +246,7 @@ public class GameController {
         Scene scene = new Scene(fxmlLoader.load());
         MenuController menuController = fxmlLoader.getController();
 
-        // Depending on your design, you might need to establish a new socket connection here.
-        menuController.setParameters(InetAddress.getLocalHost(), serverPort, player.getName(), null);
+        menuController.setParameters(server, player.getName());
 
         Stage stage = new Stage();
         stage.setTitle("Tic Tac Toe Menu");

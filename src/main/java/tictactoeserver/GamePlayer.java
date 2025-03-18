@@ -19,6 +19,8 @@ public class GamePlayer {
         this(player.getName(), playerSign, player.getSocket());
     }
 
+    public String getPlayerName() { return playerName; }
+
     public char getPlayerSign() {
         return playerSign;
     }

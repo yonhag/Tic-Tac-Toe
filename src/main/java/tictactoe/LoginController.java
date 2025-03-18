@@ -41,7 +41,7 @@ public class LoginController {
     @FXML
     private Button signupButton;
 
-    Socket server;
+    private Socket server;
 
     public void initialize() { // Initialize database connection
         loginButton.setOnAction(event -> {
@@ -65,7 +65,7 @@ public class LoginController {
         String password = loginPassword.getText();
 
         if (validateLogin(username, password)) {
-            Utilities.openMenuWindow(username);
+            Utilities.openMenuWindow(server, username);
             ((Stage) loginButton.getScene().getWindow()).close();
         } else {
             System.out.println("Invalid username or password.");
@@ -106,7 +106,7 @@ public class LoginController {
         String password = signupPassword.getText();
 
         if (signup(fullName, email, username, password)) {
-            Utilities.openMenuWindow(username);
+            Utilities.openMenuWindow(server, username);
             ((Stage) loginButton.getScene().getWindow()).close();
         } else {
             System.out.println("Signup failed. Username or email may already be taken.");

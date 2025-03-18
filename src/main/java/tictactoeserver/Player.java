@@ -39,6 +39,7 @@ public class Player {
         OutputStream outputStream = socket.getOutputStream();
         PrintWriter writer = new PrintWriter(outputStream, true);
         writer.println(message.toJSONString());
+        System.out.println("Sent to " + playerName + ": " + message);
     }
 
     @Override

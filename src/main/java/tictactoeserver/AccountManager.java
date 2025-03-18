@@ -13,9 +13,12 @@ public class AccountManager {
     private DatabaseHandler db;
     private ServerSocket serverSocket;
     private final int serverPort = 8000;
+    private final ProgramManager pm;
 
-    public AccountManager() throws ClassNotFoundException {
+    public AccountManager() throws Exception {
         db = new DatabaseHandler();
+        pm = new ProgramManager(db);
+        startServer();
     }
 
     private void startServer() throws Exception {
@@ -42,8 +45,7 @@ public class AccountManager {
     }
 
     private void determineRequestType(Socket socket) throws IOException, ParseException {
-        InputStream inputStream = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         String line = reader.readLine();
         System.out.println("Received: " + line);
@@ -54,10 +56,16 @@ public class AccountManager {
         JSONParser parser = new JSONParser();
         JSONObject json = (JSONObject)parser.parse(line);
 
+        String username = null;
+
         switch (type) {
-            case Signup -> signup(socket, json);
-            case Login -> login(socket, json);
-            default -> throw new IOException();
+            case Signup -> username = signup(socket, json);
+            case Login -> username = login(socket, json);
+            default -> new PrintWriter(socket.getOutputStream(), true).println(getAccountSystemResponse(false));
+        }
+
+        if (username != null) {
+            pm.addUser(socket, username);
         }
     }
 

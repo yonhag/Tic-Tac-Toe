@@ -1,7 +1,7 @@
 package tictactoeserver;
 
 import java.io.*;
-
+import java.sql.Timestamp;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import tictactoe.ActionStatus;
@@ -13,6 +13,7 @@ public class GameManager {
     private GamePlayer lastPlayed;
     private boolean isOver;
     private int turns;
+    private boolean resultSaved; // New field to track if result was saved
 
     private GamePlayer playerX;
     private GamePlayer playerO;
@@ -20,21 +21,25 @@ public class GameManager {
     private static final char EMPTY = '-';
     private static final char PLAYER_X = 'X';
     private static final char PLAYER_O = 'O';
-    public GameManager(int size, GamePlayer playerX, GamePlayer playerO) throws IOException {
+
+    private DatabaseHandler dbHandler; // Database handler instance
+
+    public GameManager(int size, GamePlayer playerX, GamePlayer playerO, DatabaseHandler dbHandler) throws IOException {
         this.playerX = playerX;
         this.playerO = playerO;
-
         this.isOver = false;
-
-        this.lastPlayed = playerO; // Since PlayerX Starts
+        this.lastPlayed = playerO; // Since Player X starts
         this.size = size;
-        board = new char[size][size];
-        lastTurn = new int[2];
-        turns = 0;
+        this.board = new char[size][size];
+        this.lastTurn = new int[2];
+        this.turns = 0;
+        this.resultSaved = false; // Initialize resultSaved flag
+
+        this.dbHandler = dbHandler; // Use existing connection
 
         initializeBoard();
 
-        while(!isOver) {
+        while (!isOver) {
             listenToPlayer(playerX);
             listenToPlayer(playerO);
         }
@@ -43,22 +48,23 @@ public class GameManager {
     private void listenToPlayer(GamePlayer player) throws IOException {
         try {
             String message = player.receiveMessage();
-
             Object j = JSONValue.parse(message);
 
             if (j instanceof JSONObject) {
                 handlePlayerRequest(player, (JSONObject) j);
             }
         } catch (IOException e) {
-            GamePlayer opponent = player == playerX ? playerX : playerO;
+            // When a player disconnects, the opponent wins.
+            GamePlayer opponent = player == playerX ? playerO : playerX;
             JSONObject response = new JSONObject();
             response.put("State", GameStates.YouWin.getValue());
             opponent.sendMessage(response.toJSONString());
+
+            saveGameResult(opponent);
         }
     }
 
     private synchronized void handlePlayerRequest(GamePlayer player, JSONObject request) throws IOException {
-        // Check if it is the player's turn
         boolean isPlayerTurn = isMyTurn(player);
         JSONObject response = new JSONObject();
 
@@ -77,7 +83,6 @@ public class GameManager {
             response.put("Status", ActionStatus.NotYourTurn.getValue());
         }
 
-        // Generate board string
         StringBuilder boardString = new StringBuilder();
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
@@ -86,9 +91,10 @@ public class GameManager {
         }
         response.put("Board", boardString.toString());
 
-        // Send the response back to the other player
         GamePlayer opponent = player.equals(playerX) ? playerO : playerX;
-        response.put("State", getGameState(player).getValue());
+        GameStates state = getGameState(player);
+
+        response.put("State", state.getValue());
         player.sendMessage(response.toJSONString());
 
         System.out.println(response);
@@ -97,7 +103,11 @@ public class GameManager {
         response.put("State", getGameState(opponent).getValue());
         opponent.sendMessage(response.toJSONString());
 
-
+        // If game ends, store the result only once
+        if ((state == GameStates.YouWin || state == GameStates.EnemyWin || state == GameStates.Draw) && !resultSaved) {
+            isOver = true;
+            saveGameResult(state == GameStates.YouWin ? player : (state == GameStates.EnemyWin ? opponent : null));
+        }
     }
 
     private void initializeBoard() {
@@ -111,11 +121,7 @@ public class GameManager {
     }
 
     public synchronized void onTurn(GamePlayer player, int x, int y) {
-        if (player.equals(playerX))
-            board[x][y] = PLAYER_X;
-        else
-            board[x][y] = PLAYER_O;
-
+        board[x][y] = player.equals(playerX) ? PLAYER_X : PLAYER_O;
         lastPlayed = player;
         lastTurn[0] = x;
         lastTurn[1] = y;
@@ -128,14 +134,9 @@ public class GameManager {
     private GameStates getGameState(GamePlayer player) {
         GamePlayer winner = getGameWinner();
         if (winner == null)
-            if (isDraw())
-                return GameStates.Draw;
-            else
-                return GameStates.GameStillGoing;
+            return isDraw() ? GameStates.Draw : GameStates.GameStillGoing;
 
-        if (winner.equals(player))
-            return GameStates.YouWin;
-        return GameStates.EnemyWin;
+        return winner.equals(player) ? GameStates.YouWin : GameStates.EnemyWin;
     }
 
     private GamePlayer getGameWinner() {
@@ -151,12 +152,9 @@ public class GameManager {
     private GamePlayer checkRows() {
         for (int row = 0; row < size; row++) {
             char firstSymbol = board[row][0];
-
-            if (firstSymbol == EMPTY)
-                continue;
+            if (firstSymbol == EMPTY) continue;
 
             GamePlayer rowWinner = getPlayerOfSymbol(firstSymbol);
-
             boolean win = true;
             for (int col = 1; col < size; col++) {
                 if (board[row][col] != firstSymbol) {
@@ -169,18 +167,13 @@ public class GameManager {
         }
         return null;
     }
-    /*
-    Returns the player who won any column, or null if none did
-     */
+
     private GamePlayer checkColumns() {
         for (int col = 0; col < size; col++) {
             char firstSymbol = board[0][col];
+            if (firstSymbol == EMPTY) continue;
 
-            if (firstSymbol == EMPTY) // Skip empty columns
-                continue;
-
-            GamePlayer columnWinner = getPlayerOfSymbol('X');
-
+            GamePlayer columnWinner = getPlayerOfSymbol(firstSymbol);
             boolean win = true;
             for (int row = 1; row < size; row++) {
                 if (board[row][col] != firstSymbol) {
@@ -189,22 +182,16 @@ public class GameManager {
                 }
             }
 
-            if (win) return columnWinner; // Return the winning player
+            if (win) return columnWinner;
         }
-        return null; // No winner in any column
+        return null;
     }
 
-    /*
-    Returns the player who won any diagonal, or null if none did
-     */
     private GamePlayer checkDiagonals() {
         char mainSymbol = board[0][0];
-
-        if (mainSymbol == EMPTY)
-            return null;
+        if (mainSymbol == EMPTY) return null;
 
         GamePlayer diagonalWinner = getPlayerOfSymbol(mainSymbol);
-
         for (int i = 1; i < size; i++) {
             if (board[i][i] != mainSymbol) {
                 diagonalWinner = null;
@@ -213,12 +200,9 @@ public class GameManager {
         }
 
         char antiSymbol = board[0][size - 1];
+        if (antiSymbol == EMPTY) return null;
 
-        if (antiSymbol == EMPTY)
-            return null;
-
-        GamePlayer antiDiagonalWinner = mainSymbol == 'X' ? playerX : playerO;
-
+        GamePlayer antiDiagonalWinner = getPlayerOfSymbol(antiSymbol);
         for (int i = 1; i < size; i++) {
             if (board[i][size - i - 1] != antiSymbol) {
                 antiDiagonalWinner = null;
@@ -230,12 +214,33 @@ public class GameManager {
     }
 
     private boolean isDraw() {
-        System.out.println(turns);
-        System.out.println(size * size);
         return turns == size * size;
     }
 
-    private GamePlayer getPlayerOfSymbol(char mainSymbol) {
-        return mainSymbol == 'X' ? playerX : playerO;
+    private GamePlayer getPlayerOfSymbol(char symbol) {
+        return symbol == PLAYER_X ? playerX : playerO;
+    }
+
+    /**
+     * Saves the game result in the database only once.
+     */
+    private synchronized void saveGameResult(GamePlayer winner) {
+        if (resultSaved) {
+            return;
+        }
+        resultSaved = true;
+
+        String playerXUsername = playerX.getPlayerName();
+        String playerOUsername = playerO.getPlayerName();
+        String winnerUsername = winner != null ? winner.getPlayerName() : null;
+        Timestamp dateEnded = new Timestamp(System.currentTimeMillis());
+
+        boolean success = dbHandler.saveGameResult(playerXUsername, playerOUsername, winnerUsername, dateEnded);
+
+        if (success) {
+            System.out.println("Game result saved successfully.");
+        } else {
+            System.out.println("Failed to save game result.");
+        }
     }
 }

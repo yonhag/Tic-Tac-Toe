@@ -22,21 +22,10 @@ public class MenuController {
         private PrintWriter writer;
         private BufferedReader reader;
 
-    public void setParameters(InetAddress ip, int port, String username, Socket socket) throws IOException {
+    public void setParameters(Socket server, String username) throws IOException {
         this.username = username;
-        if (socket == null) {
-            try {
-                server = new Socket();
-                SocketAddress socketAddress = new InetSocketAddress(ip, port);
-                server.connect(socketAddress);
-            } catch (ConnectException e) {
-                System.err.println("ERROR: Server isn't available");
-                System.exit(-1);
-            }
-        }
-        else {
-            server = socket;
-        }
+        this.server = server;
+
         // Creating streams for use
         reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
         writer = new PrintWriter(server.getOutputStream(), true);
@@ -64,6 +53,9 @@ public class MenuController {
         try {
             JSONObject json = (JSONObject) new JSONParser().parse(message);
             // Sign means that this is a game start message
+
+            System.out.println(json);
+
             if (json.containsKey("Symbol")) {
                 Player player = new Player(
                         Math.toIntExact((Long) json.get("Size")),

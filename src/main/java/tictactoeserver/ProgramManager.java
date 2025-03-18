@@ -18,24 +18,25 @@ import org.json.simple.parser.ParseException;
 public class  ProgramManager {
     private final Queue<Player> playerQueue;
     private final List<GameManager> games;
+    private final DatabaseHandler db;
 
-    public ProgramManager() throws Exception {
+    public ProgramManager(DatabaseHandler db) throws Exception {
         playerQueue = new LinkedList<>();
         games = new LinkedList<>();
+        this.db = db;
     }
 
     public void addUser(Socket socket, String username) {
         new Thread(() -> {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                 String input;
-                StringBuilder jsonString = new StringBuilder();
 
-                while ((input = in.readLine()) != null) {
-                    jsonString.append(input);
-                }
+                input = in.readLine();
+
+                System.out.println("ProgramManager: " + input);
 
                 // Parse the received JSON string
-                JSONObject json = (JSONObject) new org.json.simple.parser.JSONParser().parse(jsonString.toString());
+                JSONObject json = (JSONObject) new org.json.simple.parser.JSONParser().parse(input);
 
                 // Handle the client request
                 handleClient(socket, json);
@@ -91,7 +92,8 @@ public class  ProgramManager {
             GameManager manager = new GameManager(
                     playerX.getSize(),
                     new GamePlayer(playerX, 'X'),
-                    new GamePlayer(playerO, 'O')
+                    new GamePlayer(playerO, 'O'),
+                    db
             );
 
             // Add the paired games to the list
