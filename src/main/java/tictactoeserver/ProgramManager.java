@@ -28,17 +28,17 @@ public class  ProgramManager {
 
     public void addUser(Socket socket, String username) {
         new Thread(() -> {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-                String input;
-
-                input = in.readLine();
+            try {
+                // Create the BufferedReader without a try-with-resources block to avoid closing the stream
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String input = in.readLine();
 
                 System.out.println("ProgramManager: " + input);
 
                 // Parse the received JSON string
                 JSONObject json = (JSONObject) new org.json.simple.parser.JSONParser().parse(input);
 
-                // Handle the client request
+                // Handle the client request using the same open socket
                 handleClient(socket, json);
 
             } catch (IOException | ParseException e) {

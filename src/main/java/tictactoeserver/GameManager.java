@@ -236,7 +236,6 @@ public class GameManager {
         Timestamp dateEnded = new Timestamp(System.currentTimeMillis());
 
         boolean success = dbHandler.saveGameResult(playerXUsername, playerOUsername, winnerUsername, dateEnded);
-
         if (success) {
             System.out.println("Game result saved successfully.");
         } else {

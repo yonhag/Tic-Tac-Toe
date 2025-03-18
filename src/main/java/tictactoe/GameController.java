@@ -248,10 +248,11 @@ public class GameController {
 
         menuController.setParameters(server, player.getName());
 
-        Stage stage = new Stage();
+        /*Stage stage = new Stage();
         stage.setTitle("Tic Tac Toe Menu");
         stage.setScene(scene);
         stage.show();
+        */
 
         // Close the current game window.
         Thread.sleep(5000);
