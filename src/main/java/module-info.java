@@ -5,6 +5,7 @@ module tictactoe {
     requires java.desktop;
     requires java.sql;
     requires jBCrypt;
+    requires mysql.connector.j;
 
 
     opens tictactoe to javafx.fxml;
