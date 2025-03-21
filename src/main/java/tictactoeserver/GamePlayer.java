@@ -1,15 +1,14 @@
 package tictactoeserver;
 
 import java.io.*;
-import java.net.Socket;
 
 public class GamePlayer {
 
     public String playerName;
-    private char playerSign;
-    private Socket playerSocket;
+    private final char playerSign;
+    private final SocketManager playerSocket;
 
-    public GamePlayer(String playerName, char playerSign, Socket playerSocket) {
+    public GamePlayer(String playerName, char playerSign, SocketManager playerSocket) {
         this.playerName = playerName;
         this.playerSign = playerSign;
         this.playerSocket = playerSocket;
@@ -21,24 +20,12 @@ public class GamePlayer {
 
     public String getPlayerName() { return playerName; }
 
-    public char getPlayerSign() {
-        return playerSign;
-    }
-
-    public Socket getPlayerSocket() {
-        return playerSocket;
-    }
-
     public void sendMessage(String message) throws IOException {
-        OutputStream outputStream = playerSocket.getOutputStream();
-        PrintWriter writer = new PrintWriter(outputStream, true);
-        writer.println(message);
+        playerSocket.sendData(message);
     }
 
     public String receiveMessage() throws IOException {
-        InputStream inputStream = playerSocket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        return reader.readLine();
+        return playerSocket.getData();
     }
 
     @Override

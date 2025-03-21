@@ -6,13 +6,9 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.*;
 
 public class LoginController {
@@ -41,17 +37,17 @@ public class LoginController {
     @FXML
     private Button signupButton;
 
-    private Socket server;
+    private SocketManager server;
 
     public void initialize() { // Initialize database connection
-        loginButton.setOnAction(event -> {
+        loginButton.setOnAction(_ -> {
             try {
                 handleLogin();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
-        signupButton.setOnAction(event -> {
+        signupButton.setOnAction(_ -> {
             try {
                 handleSignup();
             } catch (IOException e) {
@@ -79,19 +75,16 @@ public class LoginController {
         String request = RequestTypes.Login.getValue() + j.toString();
 
         try {
-            server = new Socket();
-            SocketAddress socketAddress = new InetSocketAddress(Utilities.serverIP, Utilities.serverPort);
-            server.connect(socketAddress);
+            server = new SocketManager(new Socket());
+            server.connect(Utilities.serverIP, Utilities.serverPort);
 
-            PrintWriter writer = new PrintWriter(server.getOutputStream(), true);
-            writer.println(request);
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
-            JSONObject response = (JSONObject) new JSONParser().parse(reader.readLine());
+            server.sendData(request);
+            JSONObject response = server.getJSON();
 
             return response.containsKey("Status") && (Boolean)response.get("Status");
         } catch(IOException e) {
             System.err.println("ERROR: Server isn't available");
+            e.printStackTrace();
             System.exit(-1);
         } catch (ParseException e) {
             throw new RuntimeException(e);
@@ -113,7 +106,7 @@ public class LoginController {
         }
     }
 
-    private boolean signup(String name, String email, String username, String password) {
+    private boolean signup(String name, String email, String username, String password) throws IOException {
         JSONObject j = new JSONObject();
         j.put("Username", username);
         j.put("Password", password);
@@ -122,15 +115,11 @@ public class LoginController {
         String request = RequestTypes.Signup.getValue() + j.toString();
 
         try {
-            server = new Socket();
-            SocketAddress socketAddress = new InetSocketAddress(Utilities.serverIP, Utilities.serverPort);
-            server.connect(socketAddress);
+            server = new SocketManager(new Socket());
+            server.connect(Utilities.serverIP, Utilities.serverPort);
 
-            PrintWriter writer = new PrintWriter(server.getOutputStream(), true);
-            writer.println(request);
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
-            JSONObject response = (JSONObject) new JSONParser().parse(reader.readLine());
+            server.sendData(request);
+            JSONObject response = server.getJSON();
 
             return response.containsKey("Status") && (Boolean)response.get("Status");
         } catch(IOException e) {
@@ -139,6 +128,9 @@ public class LoginController {
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+
+        server.close();
+
         return false;
-    };
+    }
 }

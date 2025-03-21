@@ -8,36 +8,68 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class SocketManager {
-    Socket socket;
+    private final Socket socket;
+    private PrintWriter writer;
+    private BufferedReader reader;
 
-    public SocketManager(Socket socket) {
+    public SocketManager(Socket socket) throws IOException {
+        if (socket == null) throw new IllegalArgumentException("Socket cannot be null.");
         this.socket = socket;
+        if (socket.isConnected()) {
+            this.writer = new PrintWriter(socket.getOutputStream(), true);
+            this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        }
     }
 
-    private void sendData(String data) throws IOException {
-        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+    public void connect(InetAddress serverIP, int serverPort) throws IOException {
+        socket.connect(new InetSocketAddress(serverIP, serverPort));
+        this.writer = new PrintWriter(socket.getOutputStream(), true);
+        this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    }
+
+    public void close() throws IOException {
+        socket.close();
+    }
+
+    public void sendData(String data) throws IOException {
         writer.println(data);
+        System.out.println("Sent: " + data);
     }
 
-    private String getData() throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        return reader.readLine();
+    public String getData() throws IOException {
+        String data = reader.readLine();
+        System.out.println("Received: " + data);
+        return data;
     }
 
-    private void sendJSON(JSONObject data) throws IOException {
-        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+    public void sendJSON(JSONObject data) {
         writer.println(data);
+        System.out.println("Sent: " + data);
     }
 
-    private JSONObject getJSON() throws IOException, ParseException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
+    public JSONObject getJSON() throws IOException, ParseException {
         JSONParser parser = new JSONParser();
         JSONObject json = (JSONObject)parser.parse(reader.readLine());
 
+        System.out.println("Received: " + json);
+
         return json;
+    }
+
+    public boolean isClosed() {
+        return socket.isClosed();
+    }
+
+    public boolean isConnected() {
+        return socket.isConnected();
+    }
+
+    public InetAddress getInetAddress() {
+        return socket.getInetAddress();
     }
 }

@@ -9,11 +9,9 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.Socket;
 
 /*
     Controls the game window itself.
@@ -27,29 +25,19 @@ public class GameController {
 
     private Player player;
     private Boolean isMyTurn;
-    private char playerSymbol;
 
-    private Socket server;
-    private PrintWriter writer;
-    private BufferedReader reader;
-    private static final int serverPort = 8000;
+    private SocketManager server;
 
-    public void startGame(Player player, Socket socket) throws IOException {
+    public void startGame(Player player, SocketManager socket) {
         this.player = player;
         boardSize = player.getSize();
-        playerSymbol = player.getSymbol();
-        // Assume player 'X' starts the game.
-        isMyTurn = playerSymbol == 'X';
+        isMyTurn = player.getSymbol() == 'X';    // Assume player 'X' starts the game.
+
         statusLabel.setText(isMyTurn ? "Your Turn!" : "Opponent's Turn");
 
-        // Set up the socket and I/O streams.
         server = socket;
-        writer = new PrintWriter(server.getOutputStream(), true);
-        reader = new BufferedReader(new InputStreamReader(server.getInputStream()));
-
         createBoard();
 
-        // Start the centralized listener thread.
         startListening();
     }
 
@@ -59,9 +47,13 @@ public class GameController {
             for (int col = 0; col < boardSize; col++) {
                 Button button = new Button();
                 button.setPrefSize(100, 100);
-                // Each button’s event handler only sends the move;
-                // the UI will be updated later when the server responds.
-                button.setOnAction(event -> handleButtonClick(button));
+                button.setOnAction(_ -> {
+                    try {
+                        handleButtonClick(button);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
                 button.setUserData(new int[]{row, col});
                 buttons[row][col] = button;
                 gameBoard.add(button, col, row);
@@ -69,7 +61,7 @@ public class GameController {
         }
     }
 
-    private void handleButtonClick(Button button) {
+    private void handleButtonClick(Button button) throws IOException {
         if (!isMyTurn)
             return;
 
@@ -102,17 +94,11 @@ public class GameController {
     /**
      * Sends a move to the server.
      */
-    private void updateServerOnMove(int x, int y) {
+    private void updateServerOnMove(int x, int y) throws IOException {
         JSONObject json = new JSONObject();
         json.put("X", x);
         json.put("Y", y);
-
-        if (writer != null) {
-            writer.println(json);
-            System.out.println("Message sent: " + json);
-        } else {
-            System.err.println("Writer is not initialized.");
-        }
+        server.sendJSON(json);
     }
 
     private void disableBoard() {
@@ -129,12 +115,9 @@ public class GameController {
      */
     private void startListening() {
         new Thread(() -> {
-            String message;
+            JSONObject json;
             try {
-                while ((message = reader.readLine()) != null) {
-                    System.out.println("Received: " + message);
-                    JSONObject json = (JSONObject) JSONValue.parse(message);
-                    // Dispatch based on the presence of a "Status" key.
+                while ((json = server.getJSON()) != null) {
                     if (json.containsKey("Status")) {
                         handleMyMoveResponse(json);
                     } else {
@@ -143,6 +126,8 @@ public class GameController {
                 }
             } catch (IOException e) {
                 System.err.println("Error in listener thread: " + e.getMessage());
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
             }
         }).start();
     }
@@ -152,11 +137,8 @@ public class GameController {
      * Expects a message with a "Status" key.
      */
     private void handleMyMoveResponse(JSONObject json) {
-        System.out.println("My move response: " + json);
-        // Check if the move was successful.
         if ((Long) json.get("Status") != ActionStatus.Success.getValue()) {
             System.err.println("Move not successful!");
-            // Optionally, re-enable the board to allow another move.
             Platform.runLater(() -> {
                 statusLabel.setText("Your Turn");
                 isMyTurn = true;
@@ -202,7 +184,6 @@ public class GameController {
      * Expects a message without a "Status" key.
      */
     private void handleEnemyMoveUpdate(JSONObject json) {
-        System.out.println("Enemy move update: " + json);
         long state = (Long) json.get("State");
         Platform.runLater(() -> {
             updateBoard((String) json.get("Board"));
@@ -243,7 +224,7 @@ public class GameController {
      */
     private void returnToMenu() throws IOException, InterruptedException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
-        Scene scene = new Scene(fxmlLoader.load());
+        new Scene(fxmlLoader.load());
         MenuController menuController = fxmlLoader.getController();
 
         menuController.setParameters(server, player.getName());

@@ -3,23 +3,20 @@ package tictactoeserver;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.Socket;
 import java.util.Objects;
 
 public class Player {
     private final int desiredSize;
     private final String playerName;
-    private Socket socket;
+    private SocketManager socket;
 
-    public Player(int size, String name, Socket socket) {
+    public Player(int size, String name, SocketManager socket) {
         desiredSize = size;
         playerName = name;
         this.socket = socket;
     }
 
-    public Socket getSocket() {
+    public SocketManager getSocket() {
         return socket;
     }
 
@@ -36,9 +33,7 @@ public class Player {
             throw new IOException("Socket is not connected for player: " + playerName);
         }
 
-        OutputStream outputStream = socket.getOutputStream();
-        PrintWriter writer = new PrintWriter(outputStream, true);
-        writer.println(message.toJSONString());
+        socket.sendJSON(message);
         System.out.println("Sent to " + playerName + ": " + message);
     }
 

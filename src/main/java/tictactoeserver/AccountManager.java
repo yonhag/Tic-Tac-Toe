@@ -6,11 +6,10 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.net.ServerSocket;
-import java.net.Socket;
 
 public class AccountManager {
 
-    private DatabaseHandler db;
+    private final DatabaseHandler db;
     private ServerSocket serverSocket;
     private final int serverPort = 8000;
     private final ProgramManager pm;
@@ -27,12 +26,12 @@ public class AccountManager {
             System.out.println("Server started on port: " + serverPort);
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
+                SocketManager clientSocket = new SocketManager(serverSocket.accept());
                 System.out.println("New client connected: " + clientSocket.getInetAddress());
 
                 new Thread(() -> {
                     try {
-                        determineRequestType(clientSocket);
+                        handleClient(clientSocket);
                     } catch (IOException | ParseException e) {
                         throw new RuntimeException(e);
                     }
@@ -44,10 +43,8 @@ public class AccountManager {
         }
     }
 
-    private void determineRequestType(Socket socket) throws IOException, ParseException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-        String line = reader.readLine();
+    private void handleClient(SocketManager socket) throws IOException, ParseException {
+        String line = socket.getData();
         System.out.println("Received: " + line);
 
         RequestTypes type = RequestTypes.getRequestType(line);
@@ -61,7 +58,7 @@ public class AccountManager {
         switch (type) {
             case Signup -> username = signup(socket, json);
             case Login -> username = login(socket, json);
-            default -> new PrintWriter(socket.getOutputStream(), true).println(getAccountSystemResponse(false));
+            default -> socket.sendJSON(getAccountSystemResponse(false));
         }
 
         if (username != null) {
@@ -69,26 +66,22 @@ public class AccountManager {
         }
     }
 
-    private String signup(Socket socket, JSONObject json) throws IOException {
-        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-
+    private String signup(SocketManager socket, JSONObject json) throws IOException {
         String username = (String)json.get("Username");
         String password = (String)json.get("Password");
         String name = (String)json.get("Name");
         String email = (String)json.get("Email");
 
         boolean status = db.createUser(username, password, name, email);
-        writer.println(getAccountSystemResponse(status).toJSONString());
+        socket.sendJSON(getAccountSystemResponse(status));
         if (status)
             return username;
         return null;
     }
 
-    private String login(Socket socket, JSONObject json) throws IOException {
-        PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-
+    private String login(SocketManager socket, JSONObject json) throws IOException {
         boolean status = db.validateLogin((String)json.get("Username"), (String)json.get("Password"));
-        writer.println(getAccountSystemResponse(status).toJSONString());
+        socket.sendJSON(getAccountSystemResponse(status));
         if (status)
             return (String)json.get("Username");
         return null;

@@ -7,22 +7,21 @@ import org.json.simple.JSONValue;
 import tictactoe.ActionStatus;
 
 public class GameManager {
-    private char[][] board;
-    private int[] lastTurn;
+    private final char[][] board;
     private final int size;
     private GamePlayer lastPlayed;
     private boolean isOver;
     private int turns;
     private boolean resultSaved; // New field to track if result was saved
 
-    private GamePlayer playerX;
-    private GamePlayer playerO;
+    private final GamePlayer playerX;
+    private final GamePlayer playerO;
 
     private static final char EMPTY = '-';
     private static final char PLAYER_X = 'X';
     private static final char PLAYER_O = 'O';
 
-    private DatabaseHandler dbHandler; // Database handler instance
+    private final DatabaseHandler dbHandler; // Database handler instance
 
     public GameManager(int size, GamePlayer playerX, GamePlayer playerO, DatabaseHandler dbHandler) throws IOException {
         this.playerX = playerX;
@@ -31,7 +30,6 @@ public class GameManager {
         this.lastPlayed = playerO; // Since Player X starts
         this.size = size;
         this.board = new char[size][size];
-        this.lastTurn = new int[2];
         this.turns = 0;
         this.resultSaved = false; // Initialize resultSaved flag
 
@@ -116,15 +114,11 @@ public class GameManager {
                 board[i][j] = EMPTY;
             }
         }
-        lastTurn[0] = -999;
-        lastTurn[1] = -999;
     }
 
     public synchronized void onTurn(GamePlayer player, int x, int y) {
         board[x][y] = player.equals(playerX) ? PLAYER_X : PLAYER_O;
         lastPlayed = player;
-        lastTurn[0] = x;
-        lastTurn[1] = y;
     }
 
     public synchronized boolean isMyTurn(GamePlayer player) {
