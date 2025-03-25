@@ -96,7 +96,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>tictactoe.Main</mainClass>
+                    <mainClass>Client.Main</mainClass>
                 </configuration>
             </plugin>
         </plugins>
