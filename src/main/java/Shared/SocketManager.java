@@ -2,7 +2,6 @@ package Shared;
 
 import Shared.Protocol.ProtocolManager;
 import java.io.*;
-import java.net.InetAddress;
 import java.net.Socket;
 
 public class SocketManager {
@@ -36,5 +35,9 @@ public class SocketManager {
         ProtocolManager message = (ProtocolManager) in.readObject();
         System.out.println("Received: " + message);
         return message;
+    }
+
+    public void close() throws IOException {
+        socket.close();
     }
 }

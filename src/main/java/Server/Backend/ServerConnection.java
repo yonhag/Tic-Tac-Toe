@@ -2,20 +2,20 @@ package Server.Backend;
 
 import Shared.Protocol.ProtocolManager;
 import Shared.Protocol.MessageType;
+import Shared.SocketManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServerConnection {
-    private int port;
-    private ExecutorService pool;
+    private final int port;
+    private final ExecutorService pool;
 
-    private Map<Integer, ClientHandler> waitingPlayers;
+    private final Map<Integer, ClientHandler> waitingPlayers;
 
     public ServerConnection(int port) {
         this.port = port;
@@ -27,7 +27,7 @@ public class ServerConnection {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server started on port " + port);
             while(true) {
-                Socket clientSocket = serverSocket.accept();
+                SocketManager clientSocket = new SocketManager(serverSocket.accept());
                 ClientHandler handler = new ClientHandler(clientSocket, this);
                 pool.execute(handler);
             }

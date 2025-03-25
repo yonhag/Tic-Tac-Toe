@@ -8,7 +8,6 @@ public class GameSession extends BaseEntity {
     private Player player2;
     private Player winner;
     private Timestamp dateEnded;
-    private String gamescol;
 
     public int getBoardSize() {
         return boardSize;
@@ -48,13 +47,5 @@ public class GameSession extends BaseEntity {
 
     public void setDateEnded(Timestamp dateEnded) {
         this.dateEnded = dateEnded;
-    }
-
-    public String getGamescol() {
-        return gamescol;
-    }
-
-    public void setGamescol(String gamescol) {
-        this.gamescol = gamescol;
     }
 }

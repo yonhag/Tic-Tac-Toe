@@ -31,11 +31,7 @@ public class GameSessionDB extends BaseDB {
             gameSession.setWinner(null);
         }
 
-        // Board size now comes from the "Size" column
         gameSession.setBoardSize(res.getInt("Size"));
-
-        // Optionally, map the Gamescol column if needed.
-        gameSession.setGamescol(res.getString("Gamescol"));
 
         return gameSession;
     }
@@ -52,31 +48,24 @@ public class GameSessionDB extends BaseDB {
 
     @Override
     public PreparedStatement createInsertSql(BaseEntity entity, Connection connection) {
-        String sqlStr = "INSERT INTO Games (PlayerXUsername, PlayerOUsername, WinnerUsername, DateEnded, Size, Gamescol) VALUES (?, ?, ?, ?, ?, ?)";
+        String sqlStr = "INSERT INTO Games (PlayerXUsername, PlayerOUsername, WinnerUsername, DateEnded, Size) VALUES (?, ?, ?, ?, ?)";
         PreparedStatement psmtmt = null;
         if (entity instanceof GameSession gameSession) {
             try {
-                // Fix: specify Statement.RETURN_GENERATED_KEYS so generated keys are returned
                 psmtmt = connection.prepareStatement(sqlStr, Statement.RETURN_GENERATED_KEYS);
-                // Set player usernames
                 psmtmt.setString(1, gameSession.getPlayer1().getUsername());
                 psmtmt.setString(2, gameSession.getPlayer2().getUsername());
-                // Set winner username if available; else set SQL null
                 if (gameSession.getWinner() != null) {
                     psmtmt.setString(3, gameSession.getWinner().getUsername());
                 } else {
                     psmtmt.setNull(3, Types.VARCHAR);
                 }
-                // Set DateEnded (using current timestamp if not already set)
                 Timestamp dateEnded = gameSession.getDateEnded();
                 if (dateEnded == null) {
                     dateEnded = new Timestamp(System.currentTimeMillis());
                 }
                 psmtmt.setTimestamp(4, dateEnded);
-                // Set board size
                 psmtmt.setInt(5, gameSession.getBoardSize());
-                // Set Gamescol; here we use null if not provided
-                psmtmt.setString(6, gameSession.getGamescol());
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -101,7 +90,6 @@ public class GameSessionDB extends BaseDB {
                 } else {
                     psmtmt.setNull(2, Types.VARCHAR);
                 }
-                psmtmt.setString(3, gameSession.getGamescol());
                 psmtmt.setTimestamp(4, gameSession.getDateEnded());
                 psmtmt.setString(5, gameSession.getPlayer1().getUsername());
                 psmtmt.setString(6, gameSession.getPlayer2().getUsername());
@@ -159,7 +147,6 @@ public class GameSessionDB extends BaseDB {
 
         dbSession.setBoardSize(serverSession.getBoard().getSize());
         dbSession.setDateEnded(new Timestamp(System.currentTimeMillis()));
-        dbSession.setGamescol(null);
 
         String player1Username = serverSession.getPlayer1().getPlayer().getName();
         String player2Username = serverSession.getPlayer2().getPlayer().getName();

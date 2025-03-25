@@ -5,52 +5,32 @@ import Shared.Protocol.MessageType;
 import Shared.Protocol.ProtocolManager;
 import Shared.Player.Player;
 import Shared.Protocol.BoardMove;
+import Shared.SocketManager;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.sql.SQLException;
 
 public class ClientHandler implements Runnable {
-    private Socket socket;
-    private ServerConnection serverConnection;
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
+    private final SocketManager socket;
+    private final ServerConnection serverConnection;
     private GameSession session;
     private Player player;
-    private int boardSize;
 
-    public ClientHandler(Socket socket, ServerConnection serverConnection) {
+    public ClientHandler(SocketManager socket, ServerConnection serverConnection) {
         this.socket = socket;
         this.session = null;
         this.serverConnection = serverConnection;
-        try {
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        // PlayerDB initialization if needed.
     }
 
     public void sendMessage(ProtocolManager msg) {
-        try {
-            System.out.println("Message Sent to " + player + ": " + msg);
-            out.writeObject(msg);
-            out.flush();
-        } catch (IOException ignored) {
-        }
+        System.out.println("Message Sent to " + player + ": " + msg);
+        socket.sendMessage(msg);
     }
 
     public ProtocolManager receiveMessage() throws IOException, ClassNotFoundException {
-        ProtocolManager protocol = (ProtocolManager) in.readObject();
+        ProtocolManager protocol = socket.readMessage();
         System.out.println("Message Received from " + player + ": " + protocol);
         return protocol;
-    }
-
-    public int getBoardSize() {
-        return boardSize;
     }
 
     @Override
@@ -66,7 +46,7 @@ public class ClientHandler implements Runnable {
                             handleLogin(message);
                             loginFlag = false;
                         } else if (message.getType() == MessageType.DISCONNECT) {
-                            handleDisconnect(message);
+                            handleDisconnect();
                             loginFlag = false;
                         }
                     }
@@ -82,7 +62,7 @@ public class ClientHandler implements Runnable {
                     if (message != null && message.getType() == MessageType.MOVE) {
                         handleMove(message);
                     } else if (message != null && message.getType() == MessageType.DISCONNECT) {
-                        handleDisconnect(message);
+                        handleDisconnect();
                         dataFlag = false;
                     }
                 } catch (IOException | ClassNotFoundException e) {
@@ -115,7 +95,7 @@ public class ClientHandler implements Runnable {
     }
 
 
-    private void handleDisconnect(ProtocolManager message) throws IOException {
+    private void handleDisconnect() throws IOException {
         System.out.println("Disconnected");
         this.socket.close();
     }
@@ -124,10 +104,6 @@ public class ClientHandler implements Runnable {
         System.out.println("Processing move...");
         BoardMove boardMove = (BoardMove) message.getData();
         this.session.makeMove(this, boardMove.getX(), boardMove.getY());
-    }
-
-    public GameSession getSession() {
-        return session;
     }
 
     public void setSession(GameSession session) {
