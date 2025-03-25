@@ -12,11 +12,11 @@ import java.sql.SQLException;
 
 public class ClientHandler implements Runnable {
     private final SocketManager socket;
-    private final ServerConnection serverConnection;
-    private GameSession session;
+    private final Server serverConnection;
+    private GameHandler session;
     private Player player;
 
-    public ClientHandler(SocketManager socket, ServerConnection serverConnection) {
+    public ClientHandler(SocketManager socket, Server serverConnection) {
         this.socket = socket;
         this.session = null;
         this.serverConnection = serverConnection;
@@ -106,7 +106,7 @@ public class ClientHandler implements Runnable {
         this.session.makeMove(this, boardMove.x(), boardMove.y());
     }
 
-    public void setSession(GameSession session) {
+    public void setSession(GameHandler session) {
         this.session = session;
     }
 

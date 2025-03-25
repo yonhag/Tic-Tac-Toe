@@ -11,13 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ServerConnection {
+public class Server {
     private final int port;
     private final ExecutorService pool;
 
     private final Map<Integer, ClientHandler> waitingPlayers;
 
-    public ServerConnection(int port) {
+    public Server(int port) {
         this.port = port;
         pool = Executors.newFixedThreadPool(20);
         waitingPlayers = new ConcurrentHashMap<>();
@@ -39,7 +39,7 @@ public class ServerConnection {
     public synchronized void matchPlayer(int boardSize, ClientHandler handler) {
         if (waitingPlayers.containsKey(boardSize)) {
             ClientHandler opponent = waitingPlayers.remove(boardSize);
-            GameSession session = new GameSession(opponent, handler, boardSize);
+            GameHandler session = new GameHandler(opponent, handler, boardSize);
             handler.setSession(session);
             opponent.setSession(session);
             session.startSession();

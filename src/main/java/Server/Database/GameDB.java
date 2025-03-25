@@ -1,5 +1,7 @@
 package Server.Database;
 
+import Server.Backend.GameHandler;
+
 import java.sql.*;
 import java.sql.Timestamp;
 
@@ -39,7 +41,7 @@ public class GameDB extends BaseDB {
         }
     }
 
-    public static void saveGameSession(Server.Backend.GameSession serverSession) throws SQLException {
+    public static void saveGameSession(GameHandler serverSession) throws SQLException {
         GameDB gameDB = new GameDB();
         Game dbSession = new Game();
 

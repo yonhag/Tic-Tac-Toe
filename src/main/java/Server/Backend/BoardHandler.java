@@ -1,10 +1,10 @@
 package Server.Backend;
 
-public class Board {
+public class BoardHandler {
     private final int size;
     private final ClientHandler[][] board;
 
-    public Board(int size) {
+    public BoardHandler(int size) {
         this.size = size;
         this.board = new ClientHandler[this.size][this.size];
         for (int i = 0; i < size; i++) {
@@ -19,53 +19,63 @@ public class Board {
     }
 
     public boolean isWon(ClientHandler clientHandler) {
-        boolean winning;
-        // check rows
-        for (int i = 0; i < size; i++) {
-            winning = true;
-            for (int j = 0; j < size; j++) {
-                if (this.board[j][i] != clientHandler) {
-                    winning = false;
-                    break;
-                }
-            }
-            if (winning) {
-                return true;
-            }
-        }
-        // check cols
-        for (int i = 0; i < size; i++) {
-            winning = true;
-            for (int j = 0; j < size; j++) {
-                if (this.board[i][j] != clientHandler) {
-                    winning = false;
-                    break;
-                }
-            }
-            if (winning) {
-                return true;
-            }
-        }
-        // check diagonals
-        winning = true;
+        return isWonRows(clientHandler) || isWonCols(clientHandler) || isWonDiags(clientHandler);
+    }
+
+    private boolean isWonDiags(ClientHandler clientHandler) {
+        return isWonMainDiag(clientHandler) || isWonSecDiag(clientHandler);
+    }
+
+    private boolean isWonMainDiag(ClientHandler clientHandler) {
         for (int i = 0; i < size; i++) {
             if (this.board[i][i] != clientHandler) {
-                winning = false;
-                break;
+                return false;
             }
         }
-        if (winning) {
-            return true;
-        }
+        return true;
+    }
 
-        winning = true;
+    private boolean isWonSecDiag(ClientHandler clientHandler) {
         for (int i = 0; i < size; i++) {
             if (this.board[i][size - i - 1] != clientHandler) {
-                winning = false;
-                break;
+               return false;
             }
         }
-        return winning;
+        return true;
+    }
+
+    private boolean isWonCols(ClientHandler clientHandler) {
+        boolean isWon;
+        for (int i = 0; i < size; i++) {
+            isWon = true;
+            for (int j = 0; j < size; j++) {
+                if (this.board[i][j] != clientHandler) {
+                    isWon = false;
+                    break;
+                }
+            }
+            if (isWon) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isWonRows(ClientHandler clientHandler) {
+        boolean isWon;
+        for (int i = 0; i < size; i++) {
+            isWon = true;
+            for (int j = 0; j < size; j++) {
+                if (this.board[j][i] != clientHandler) {
+                    isWon = false;
+                    break;
+                }
+            }
+            if (isWon) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean hasPlaces() {

@@ -9,19 +9,19 @@ import Server.Database.GameDB;
 
 import java.sql.SQLException;
 
-public class GameSession {
+public class GameHandler {
     private final ClientHandler player1;
     private final ClientHandler player2;
     private ClientHandler movePlayer;
-    private final Board board;
+    private final BoardHandler board;
     private GameState gameState;
     private boolean persisted = false;
 
-    public GameSession(ClientHandler player1, ClientHandler player2, int boardSize) {
+    public GameHandler(ClientHandler player1, ClientHandler player2, int boardSize) {
         this.player1 = player1;
         this.movePlayer = player1;
         this.player2 = player2;
-        this.board = new Board(boardSize);
+        this.board = new BoardHandler(boardSize);
         this.gameState = GameState.STILL_GOING;
     }
 
@@ -71,7 +71,7 @@ public class GameSession {
         return player2;
     }
 
-    public Board getBoard() {
+    public BoardHandler getBoard() {
         return board;
     }
 }
