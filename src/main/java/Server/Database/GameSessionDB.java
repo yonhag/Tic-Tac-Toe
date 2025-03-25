@@ -73,13 +73,9 @@ public class GameSessionDB extends BaseDB {
         return psmtmt;
     }
 
-// ... other methods remain unchanged ...
-
-
     @Override
     public PreparedStatement createUpdateSql(BaseEntity entity, Connection connection) {
-        // Use the composite primary key (DateEnded, PlayerXUsername, PlayerOUsername) for locating the row.
-        String sqlStr = "UPDATE Games SET Size = ?, WinnerUsername = ?, Gamescol = ? WHERE DateEnded = ? AND PlayerXUsername = ? AND PlayerOUsername = ?";
+        String sqlStr = "UPDATE Games SET Size = ?, WinnerUsername = ?, WHERE DateEnded = ? AND PlayerXUsername = ? AND PlayerOUsername = ?";
         PreparedStatement psmtmt = null;
         if (entity instanceof GameSession gameSession) {
             try {
@@ -90,9 +86,9 @@ public class GameSessionDB extends BaseDB {
                 } else {
                     psmtmt.setNull(2, Types.VARCHAR);
                 }
-                psmtmt.setTimestamp(4, gameSession.getDateEnded());
-                psmtmt.setString(5, gameSession.getPlayer1().getUsername());
-                psmtmt.setString(6, gameSession.getPlayer2().getUsername());
+                psmtmt.setTimestamp(3, gameSession.getDateEnded());
+                psmtmt.setString(4, gameSession.getPlayer1().getUsername());
+                psmtmt.setString(5, gameSession.getPlayer2().getUsername());
             } catch (SQLException e) {
                 e.printStackTrace();
             }
