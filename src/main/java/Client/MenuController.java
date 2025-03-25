@@ -7,7 +7,6 @@ import Shared.SocketManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Spinner;
 import javafx.stage.Stage;
@@ -55,9 +54,9 @@ public class MenuController {
     private void handleServerMessages() throws IOException, ClassNotFoundException {
         ProtocolManager message;
         while ((message = server.readMessage()) != null) {
-            switch (message.getType()) {
+            switch (message.type()) {
                 case START_GAME:
-                    player.setSymbol((Shared.Player.PlayerSymbol) message.getData());
+                    player.setSymbol((Shared.Player.PlayerSymbol) message.data());
                     Platform.runLater(() -> {
                         try {
                             openGameWindow();

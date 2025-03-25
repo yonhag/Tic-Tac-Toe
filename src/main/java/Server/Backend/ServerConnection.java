@@ -36,7 +36,7 @@ public class ServerConnection {
         }
     }
 
-    public synchronized void matchPlayer(int boardSize, ClientHandler handler) throws IOException {
+    public synchronized void matchPlayer(int boardSize, ClientHandler handler) {
         if (waitingPlayers.containsKey(boardSize)) {
             ClientHandler opponent = waitingPlayers.remove(boardSize);
             GameSession session = new GameSession(opponent, handler, boardSize);

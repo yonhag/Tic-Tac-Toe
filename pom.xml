@@ -19,11 +19,6 @@
         <!-- JavaFX dependencies -->
         <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
         <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-            <version>1.1.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>17.0.6</version>
@@ -56,11 +51,6 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.t3hnar</groupId>
-            <artifactId>scala-bcrypt_2.11</artifactId>
-            <version>4.3.0</version>
         </dependency>
         <dependency>
             <groupId>com.example</groupId>

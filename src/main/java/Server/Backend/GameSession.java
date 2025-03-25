@@ -5,16 +5,15 @@ import Shared.Protocol.BoardMove;
 import Shared.Protocol.GameState;
 import Shared.Protocol.ProtocolManager;
 import Shared.Protocol.MessageType;
-import Server.Database.GameSessionDB;
+import Server.Database.GameDB;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
 public class GameSession {
-    private ClientHandler player1;
-    private ClientHandler player2;
+    private final ClientHandler player1;
+    private final ClientHandler player2;
     private ClientHandler movePlayer;
-    private Board board;
+    private final Board board;
     private GameState gameState;
     private boolean persisted = false;
 
@@ -26,7 +25,7 @@ public class GameSession {
         this.gameState = GameState.STILL_GOING;
     }
 
-    public void startSession() throws IOException {
+    public void startSession() {
         player1.sendMessage(new ProtocolManager(MessageType.START_GAME, PlayerSymbol.X));
         player2.sendMessage(new ProtocolManager(MessageType.START_GAME, PlayerSymbol.O));
     }
@@ -53,7 +52,7 @@ public class GameSession {
                 this.movePlayer = opponent;
 
                 if (gameState != GameState.STILL_GOING && !persisted) {
-                    GameSessionDB.saveGameSession(this);
+                    GameDB.saveGameSession(this);
                     persisted = true;
                 }
             } else {
@@ -74,9 +73,5 @@ public class GameSession {
 
     public Board getBoard() {
         return board;
-    }
-
-    public GameState getGameState() {
-        return gameState;
     }
 }

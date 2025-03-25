@@ -2,10 +2,10 @@ package Server.Database;
 
 import java.sql.Timestamp;
 
-public class GameSession extends BaseEntity {
+public class Game extends BaseEntity {
     private int boardSize;
-    private Player player1;
-    private Player player2;
+    private Player playerX;
+    private Player playerO;
     private Player winner;
     private Timestamp dateEnded;
 
@@ -17,20 +17,20 @@ public class GameSession extends BaseEntity {
         this.boardSize = boardSize;
     }
 
-    public Player getPlayer1() {
-        return player1;
+    public Player getPlayerX() {
+        return playerX;
     }
 
-    public void setPlayer1(Player player1) {
-        this.player1 = player1;
+    public void setPlayerX(Player playerX) {
+        this.playerX = playerX;
     }
 
-    public Player getPlayer2() {
-        return player2;
+    public Player getPlayerO() {
+        return playerO;
     }
 
-    public void setPlayer2(Player player2) {
-        this.player2 = player2;
+    public void setPlayerO(Player playerO) {
+        this.playerO = playerO;
     }
 
     public Player getWinner() {

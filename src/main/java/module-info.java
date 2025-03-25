@@ -1,11 +1,7 @@
 module Client {
     requires javafx.controls;
     requires javafx.fxml;
-    requires json.simple;
-    requires java.desktop;
     requires java.sql;
-    requires jBCrypt;
-    requires mysql.connector.j;
 
 
     opens Client to javafx.fxml;

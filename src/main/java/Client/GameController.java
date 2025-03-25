@@ -39,7 +39,7 @@ public class GameController {
         this.player = player;
         this.server = server;
         this.boardSize = player.getSize();
-        // 'X' always starts.
+
         isMyTurn = (player.getSymbol() == PlayerSymbol.X);
         statusLabel.setText(isMyTurn ? "Your Turn!" : "Opponent's Turn");
         createBoard();
@@ -54,13 +54,7 @@ public class GameController {
                 button.setPrefSize(100, 100);
                 final int r = row;
                 final int c = col;
-                button.setOnAction(_ -> {
-                    try {
-                        handleButtonClick(r, c, button);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+                button.setOnAction(_ -> handleButtonClick(r, c, button));
                 buttons[row][col] = button;
                 gameBoard.add(button, col, row);
             }
@@ -68,8 +62,7 @@ public class GameController {
     }
 
     // When a cell is clicked, record the pending move and update the UI immediately.
-    private void handleButtonClick(int row, int col, Button button) throws IOException {
-        // Disallow moves if it's not our turn, a move is pending, or the cell is already taken.
+    private void handleButtonClick(int row, int col, Button button) {
         if (!isMyTurn || pendingMove != null || !button.getText().isEmpty())
             return;
         // Record the pending move and update the UI.
@@ -86,42 +79,36 @@ public class GameController {
             try {
                 ProtocolManager message;
                 while ((message = server.readMessage()) != null) {
-                    switch (message.getType()) {
-                        // For VALID_MOVE we just update the status;
-                        // the pending move will be cleared in GAME_STATUS.
+                    switch (message.type()) {
                         case VALID_MOVE:
                             Platform.runLater(() -> statusLabel.setText("Move accepted. Waiting for opponent..."));
                             break;
-                        // If the move is rejected, revert the pending move.
                         case INVALID_MOVE:
                             Platform.runLater(() -> {
                                 statusLabel.setText("Invalid move. Try again!");
                                 if (pendingMove != null) {
-                                    int x = pendingMove.getX();
-                                    int y = pendingMove.getY();
+                                    int x = pendingMove.x();
+                                    int y = pendingMove.y();
                                     buttons[x][y].setText("");
                                     pendingMove = null;
                                 }
                                 isMyTurn = true;
                             });
                             break;
-                        // When receiving a MOVE, update the board if it's the opponent’s move.
                         case MOVE:
-                            BoardMove move = (BoardMove) message.getData();
+                            BoardMove move = (BoardMove) message.data();
                             Platform.runLater(() -> {
-                                if (!(pendingMove != null && pendingMove.getX() == move.getX() && pendingMove.getY() == move.getY())) {
-                                    updateBoardCell(move.getX(), move.getY(), getOpponentSymbol());
+                                if (!(pendingMove != null && pendingMove.x() == move.x() && pendingMove.y() == move.y())) {
+                                    updateBoardCell(move.x(), move.y(), getOpponentSymbol());
                                 }
                             });
                             break;
-                        // In GAME_STATUS, decide whose turn it is.
                         case GAME_STATUS:
-                            GameState state = (GameState) message.getData();
+                            GameState state = (GameState) message.data();
                             Platform.runLater(() -> {
                                 if (state != GameState.STILL_GOING) {
                                     statusLabel.setText("Game Over: " + state);
                                     disableBoard();
-                                    // Return to menu after a short delay.
                                     new Thread(() -> {
                                         try {
                                             Thread.sleep(5000);
@@ -137,13 +124,11 @@ public class GameController {
                                         }
                                     }).start();
                                 } else {
-                                    // If we have a pending move, it means our move was just confirmed.
                                     if (pendingMove != null) {
                                         pendingMove = null;
-                                        isMyTurn = false; // Now it's opponent's turn.
+                                        isMyTurn = false;
                                         statusLabel.setText("Move accepted. Waiting for opponent...");
                                     } else {
-                                        // Otherwise, it's now our turn because the opponent moved.
                                         isMyTurn = true;
                                         statusLabel.setText("Your Turn!");
                                     }
@@ -163,17 +148,14 @@ public class GameController {
         }).start();
     }
 
-    // Update a specific board cell with a symbol.
     private void updateBoardCell(int row, int col, PlayerSymbol symbol) {
         buttons[row][col].setText(symbol.toString());
     }
 
-    // Returns the opponent's symbol.
     private PlayerSymbol getOpponentSymbol() {
         return player.getSymbol() == PlayerSymbol.X ? PlayerSymbol.O : PlayerSymbol.X;
     }
 
-    // Disable all cells when the game ends.
     private void disableBoard() {
         for (int row = 0; row < boardSize; row++) {
             for (int col = 0; col < boardSize; col++) {
@@ -182,7 +164,6 @@ public class GameController {
         }
     }
 
-    // Return to the menu after game over.
     private void returnToMenu() throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("menu.fxml"));
         Scene scene = new Scene(fxmlLoader.load());

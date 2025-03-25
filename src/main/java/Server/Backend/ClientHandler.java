@@ -42,10 +42,10 @@ public class ClientHandler implements Runnable {
                 try {
                     message = receiveMessage();
                     if (message != null) {
-                        if (message.getType() == MessageType.LOGIN) {
+                        if (message.type() == MessageType.LOGIN) {
                             handleLogin(message);
                             loginFlag = false;
-                        } else if (message.getType() == MessageType.DISCONNECT) {
+                        } else if (message.type() == MessageType.DISCONNECT) {
                             handleDisconnect();
                             loginFlag = false;
                         }
@@ -59,9 +59,9 @@ public class ClientHandler implements Runnable {
             do {
                 try {
                     message = receiveMessage();
-                    if (message != null && message.getType() == MessageType.MOVE) {
+                    if (message != null && message.type() == MessageType.MOVE) {
                         handleMove(message);
-                    } else if (message != null && message.getType() == MessageType.DISCONNECT) {
+                    } else if (message != null && message.type() == MessageType.DISCONNECT) {
                         handleDisconnect();
                         dataFlag = false;
                     }
@@ -78,7 +78,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleLogin(ProtocolManager message) throws IOException {
-        this.player = (Player) message.getData();
+        this.player = (Player) message.data();
         if (!PlayerDB.playerExists(player.getName())) {
             PlayerDB.savePlayer(player);
             System.out.println("Created new user: " + player.getName());
@@ -102,8 +102,8 @@ public class ClientHandler implements Runnable {
 
     private void handleMove(ProtocolManager message) throws SQLException {
         System.out.println("Processing move...");
-        BoardMove boardMove = (BoardMove) message.getData();
-        this.session.makeMove(this, boardMove.getX(), boardMove.getY());
+        BoardMove boardMove = (BoardMove) message.data();
+        this.session.makeMove(this, boardMove.x(), boardMove.y());
     }
 
     public void setSession(GameSession session) {
