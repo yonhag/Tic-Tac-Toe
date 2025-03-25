@@ -1,5 +1,6 @@
 package Server.Backend;
 
+import Server.Database.PlayerDB;
 import Shared.Protocol.MessageType;
 import Shared.Protocol.ProtocolManager;
 import Shared.Player.Player;
@@ -98,7 +99,12 @@ public class ClientHandler implements Runnable {
 
     private void handleLogin(ProtocolManager message) throws IOException {
         this.player = (Player) message.getData();
-
+        if (!PlayerDB.playerExists(player.getName())) {
+            PlayerDB.savePlayer(player);
+            System.out.println("Created new user: " + player.getName());
+        } else {
+            System.out.println("User already exists: " + player.getName());
+        }
         /*
         if (!PlayerDB.playerExists(player.getName())) {
             sendMessage(new ProtocolManager(MessageType.LOGIN_FAILED, "User not found. Please sign up."));

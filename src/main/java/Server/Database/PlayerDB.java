@@ -35,7 +35,6 @@ public class PlayerDB extends BaseDB {
 
     @Override
     public PreparedStatement createInsertSql(BaseEntity entity, Connection connection) {
-        // Insert into the TicTacToe.Users table with required columns.
         String sqlStr = "INSERT INTO TicTacToe.Users (username, password, name, email) VALUES (?, ?, ?, ?)";
         PreparedStatement psmtmt = null;
         if (entity instanceof Player) {
@@ -43,10 +42,9 @@ public class PlayerDB extends BaseDB {
             try {
                 psmtmt = connection.prepareStatement(sqlStr, Statement.RETURN_GENERATED_KEYS);
                 psmtmt.setString(1, player.getUsername());
-                // Assuming default or empty values for password, name, and email.
-                psmtmt.setString(2, ""); // default password
-                psmtmt.setString(3, player.getUsername()); // default name set as username
-                psmtmt.setString(4, ""); // default email
+                psmtmt.setString(2, player.getPassword());
+                psmtmt.setString(3, player.getName());
+                psmtmt.setString(4, player.getEmail());
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -134,8 +132,7 @@ public class PlayerDB extends BaseDB {
         }
 
         // Create a new Player with the provided username.
-        dbPlayer = new Player();
-        dbPlayer.setUsername(modelPlayer.getName());
+        dbPlayer = new Player(modelPlayer.getName());
         playerDB.insert(dbPlayer);
         try {
             playerDB.saveChanges();
